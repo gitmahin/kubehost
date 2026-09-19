@@ -8,59 +8,264 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root"
-import { Route as IndexRouteImport } from "./routes/index"
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as PathlessMainRouteRouteImport } from './routes/_pathlessMain/route'
+import { Route as PathlessMainIndexRouteImport } from './routes/_pathlessMain/index'
+import { Route as PathlessMainStorageIndexRouteImport } from './routes/_pathlessMain/storage/index'
+import { Route as PathlessMainImagesIndexRouteImport } from './routes/_pathlessMain/images/index'
+import { Route as PathlessMainDomainsIndexRouteImport } from './routes/_pathlessMain/domains/index'
+import { Route as PathlessMainDeploymentsIndexRouteImport } from './routes/_pathlessMain/deployments/index'
+import { Route as PathlessMainProjectsProject_idRouteImport } from './routes/_pathlessMain/projects/$project_id'
+import { Route as PathlessMainStorageCreateIndexRouteImport } from './routes/_pathlessMain/storage/create.index'
+import { Route as PathlessMainProjectsCreateIndexRouteImport } from './routes/_pathlessMain/projects/create.index'
+import { Route as PathlessMainProjectsCreateApplicationIndexRouteImport } from './routes/_pathlessMain/projects/create.application.index'
 
-const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+const PathlessMainRouteRoute = PathlessMainRouteRouteImport.update({
+  id: '/_pathlessMain',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PathlessMainIndexRoute = PathlessMainIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PathlessMainRouteRoute,
+} as any)
+const PathlessMainStorageIndexRoute =
+  PathlessMainStorageIndexRouteImport.update({
+    id: '/storage/',
+    path: '/storage/',
+    getParentRoute: () => PathlessMainRouteRoute,
+  } as any)
+const PathlessMainImagesIndexRoute = PathlessMainImagesIndexRouteImport.update({
+  id: '/images/',
+  path: '/images/',
+  getParentRoute: () => PathlessMainRouteRoute,
+} as any)
+const PathlessMainDomainsIndexRoute =
+  PathlessMainDomainsIndexRouteImport.update({
+    id: '/domains/',
+    path: '/domains/',
+    getParentRoute: () => PathlessMainRouteRoute,
+  } as any)
+const PathlessMainDeploymentsIndexRoute =
+  PathlessMainDeploymentsIndexRouteImport.update({
+    id: '/deployments/',
+    path: '/deployments/',
+    getParentRoute: () => PathlessMainRouteRoute,
+  } as any)
+const PathlessMainProjectsProject_idRoute =
+  PathlessMainProjectsProject_idRouteImport.update({
+    id: '/projects/$project_id',
+    path: '/projects/$project_id',
+    getParentRoute: () => PathlessMainRouteRoute,
+  } as any)
+const PathlessMainStorageCreateIndexRoute =
+  PathlessMainStorageCreateIndexRouteImport.update({
+    id: '/storage/create/',
+    path: '/storage/create/',
+    getParentRoute: () => PathlessMainRouteRoute,
+  } as any)
+const PathlessMainProjectsCreateIndexRoute =
+  PathlessMainProjectsCreateIndexRouteImport.update({
+    id: '/projects/create/',
+    path: '/projects/create/',
+    getParentRoute: () => PathlessMainRouteRoute,
+  } as any)
+const PathlessMainProjectsCreateApplicationIndexRoute =
+  PathlessMainProjectsCreateApplicationIndexRouteImport.update({
+    id: '/projects/create/application/',
+    path: '/projects/create/application/',
+    getParentRoute: () => PathlessMainRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute
+  '/': typeof PathlessMainIndexRoute
+  '/projects/$project_id': typeof PathlessMainProjectsProject_idRoute
+  '/deployments/': typeof PathlessMainDeploymentsIndexRoute
+  '/domains/': typeof PathlessMainDomainsIndexRoute
+  '/images/': typeof PathlessMainImagesIndexRoute
+  '/storage/': typeof PathlessMainStorageIndexRoute
+  '/projects/create/': typeof PathlessMainProjectsCreateIndexRoute
+  '/storage/create/': typeof PathlessMainStorageCreateIndexRoute
+  '/projects/create/application/': typeof PathlessMainProjectsCreateApplicationIndexRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute
+  '/': typeof PathlessMainIndexRoute
+  '/projects/$project_id': typeof PathlessMainProjectsProject_idRoute
+  '/deployments': typeof PathlessMainDeploymentsIndexRoute
+  '/domains': typeof PathlessMainDomainsIndexRoute
+  '/images': typeof PathlessMainImagesIndexRoute
+  '/storage': typeof PathlessMainStorageIndexRoute
+  '/projects/create': typeof PathlessMainProjectsCreateIndexRoute
+  '/storage/create': typeof PathlessMainStorageCreateIndexRoute
+  '/projects/create/application': typeof PathlessMainProjectsCreateApplicationIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  "/": typeof IndexRoute
+  '/_pathlessMain': typeof PathlessMainRouteRouteWithChildren
+  '/_pathlessMain/': typeof PathlessMainIndexRoute
+  '/_pathlessMain/projects/$project_id': typeof PathlessMainProjectsProject_idRoute
+  '/_pathlessMain/deployments/': typeof PathlessMainDeploymentsIndexRoute
+  '/_pathlessMain/domains/': typeof PathlessMainDomainsIndexRoute
+  '/_pathlessMain/images/': typeof PathlessMainImagesIndexRoute
+  '/_pathlessMain/storage/': typeof PathlessMainStorageIndexRoute
+  '/_pathlessMain/projects/create/': typeof PathlessMainProjectsCreateIndexRoute
+  '/_pathlessMain/storage/create/': typeof PathlessMainStorageCreateIndexRoute
+  '/_pathlessMain/projects/create/application/': typeof PathlessMainProjectsCreateApplicationIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/"
+  fullPaths:
+    | '/'
+    | '/projects/$project_id'
+    | '/deployments/'
+    | '/domains/'
+    | '/images/'
+    | '/storage/'
+    | '/projects/create/'
+    | '/storage/create/'
+    | '/projects/create/application/'
   fileRoutesByTo: FileRoutesByTo
-  to: "/"
-  id: "__root__" | "/"
+  to:
+    | '/'
+    | '/projects/$project_id'
+    | '/deployments'
+    | '/domains'
+    | '/images'
+    | '/storage'
+    | '/projects/create'
+    | '/storage/create'
+    | '/projects/create/application'
+  id:
+    | '__root__'
+    | '/_pathlessMain'
+    | '/_pathlessMain/'
+    | '/_pathlessMain/projects/$project_id'
+    | '/_pathlessMain/deployments/'
+    | '/_pathlessMain/domains/'
+    | '/_pathlessMain/images/'
+    | '/_pathlessMain/storage/'
+    | '/_pathlessMain/projects/create/'
+    | '/_pathlessMain/storage/create/'
+    | '/_pathlessMain/projects/create/application/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  PathlessMainRouteRoute: typeof PathlessMainRouteRouteWithChildren
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/"
-      path: "/"
-      fullPath: "/"
-      preLoaderRoute: typeof IndexRouteImport
+    '/_pathlessMain': {
+      id: '/_pathlessMain'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PathlessMainRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_pathlessMain/': {
+      id: '/_pathlessMain/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof PathlessMainIndexRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
+    }
+    '/_pathlessMain/storage/': {
+      id: '/_pathlessMain/storage/'
+      path: '/storage'
+      fullPath: '/storage/'
+      preLoaderRoute: typeof PathlessMainStorageIndexRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
+    }
+    '/_pathlessMain/images/': {
+      id: '/_pathlessMain/images/'
+      path: '/images'
+      fullPath: '/images/'
+      preLoaderRoute: typeof PathlessMainImagesIndexRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
+    }
+    '/_pathlessMain/domains/': {
+      id: '/_pathlessMain/domains/'
+      path: '/domains'
+      fullPath: '/domains/'
+      preLoaderRoute: typeof PathlessMainDomainsIndexRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
+    }
+    '/_pathlessMain/deployments/': {
+      id: '/_pathlessMain/deployments/'
+      path: '/deployments'
+      fullPath: '/deployments/'
+      preLoaderRoute: typeof PathlessMainDeploymentsIndexRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
+    }
+    '/_pathlessMain/projects/$project_id': {
+      id: '/_pathlessMain/projects/$project_id'
+      path: '/projects/$project_id'
+      fullPath: '/projects/$project_id'
+      preLoaderRoute: typeof PathlessMainProjectsProject_idRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
+    }
+    '/_pathlessMain/storage/create/': {
+      id: '/_pathlessMain/storage/create/'
+      path: '/storage/create'
+      fullPath: '/storage/create/'
+      preLoaderRoute: typeof PathlessMainStorageCreateIndexRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
+    }
+    '/_pathlessMain/projects/create/': {
+      id: '/_pathlessMain/projects/create/'
+      path: '/projects/create'
+      fullPath: '/projects/create/'
+      preLoaderRoute: typeof PathlessMainProjectsCreateIndexRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
+    }
+    '/_pathlessMain/projects/create/application/': {
+      id: '/_pathlessMain/projects/create/application/'
+      path: '/projects/create/application'
+      fullPath: '/projects/create/application/'
+      preLoaderRoute: typeof PathlessMainProjectsCreateApplicationIndexRouteImport
+      parentRoute: typeof PathlessMainRouteRoute
     }
   }
 }
 
+interface PathlessMainRouteRouteChildren {
+  PathlessMainIndexRoute: typeof PathlessMainIndexRoute
+  PathlessMainProjectsProject_idRoute: typeof PathlessMainProjectsProject_idRoute
+  PathlessMainDeploymentsIndexRoute: typeof PathlessMainDeploymentsIndexRoute
+  PathlessMainDomainsIndexRoute: typeof PathlessMainDomainsIndexRoute
+  PathlessMainImagesIndexRoute: typeof PathlessMainImagesIndexRoute
+  PathlessMainStorageIndexRoute: typeof PathlessMainStorageIndexRoute
+  PathlessMainProjectsCreateIndexRoute: typeof PathlessMainProjectsCreateIndexRoute
+  PathlessMainStorageCreateIndexRoute: typeof PathlessMainStorageCreateIndexRoute
+  PathlessMainProjectsCreateApplicationIndexRoute: typeof PathlessMainProjectsCreateApplicationIndexRoute
+}
+
+const PathlessMainRouteRouteChildren: PathlessMainRouteRouteChildren = {
+  PathlessMainIndexRoute: PathlessMainIndexRoute,
+  PathlessMainProjectsProject_idRoute: PathlessMainProjectsProject_idRoute,
+  PathlessMainDeploymentsIndexRoute: PathlessMainDeploymentsIndexRoute,
+  PathlessMainDomainsIndexRoute: PathlessMainDomainsIndexRoute,
+  PathlessMainImagesIndexRoute: PathlessMainImagesIndexRoute,
+  PathlessMainStorageIndexRoute: PathlessMainStorageIndexRoute,
+  PathlessMainProjectsCreateIndexRoute: PathlessMainProjectsCreateIndexRoute,
+  PathlessMainStorageCreateIndexRoute: PathlessMainStorageCreateIndexRoute,
+  PathlessMainProjectsCreateApplicationIndexRoute:
+    PathlessMainProjectsCreateApplicationIndexRoute,
+}
+
+const PathlessMainRouteRouteWithChildren =
+  PathlessMainRouteRoute._addFileChildren(PathlessMainRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  PathlessMainRouteRoute: PathlessMainRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx"
-import type { createStart } from "@tanstack/react-start"
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
