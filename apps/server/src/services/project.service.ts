@@ -1,5 +1,9 @@
 import { inject, injectable } from "inversify"
-import { K8sService, SecretMapDataType } from "./k8s.service"
+import {
+  CreateConfigMapParams,
+  CreateSecretMapParams,
+  K8sService,
+} from "./k8s.service"
 
 type CreateDeploymentParams = {
   namespace: string
@@ -13,12 +17,6 @@ type CreateDeploymentParams = {
 
 type CreateServiceParams = {
   serviceName: string
-}
-
-type CreateSecretMapParams = {
-  namespace: string
-  secretName: string
-  data: SecretMapDataType
 }
 
 @injectable()
@@ -41,69 +39,6 @@ export class ProjectService {
     return response
   }
 
-  async createSecretMap({
-    namespace,
-    secretName,
-    data,
-  }: CreateSecretMapParams): Promise<string> {
-    const baseEncodedSecrets = K8sService.GetBase64SecretData(data)
-
-    const secret = await this.k8sService.k8sApi.createNamespacedSecret({
-      namespace,
-      body: {
-        apiVersion: "v1",
-        kind: "Secret",
-        metadata: {
-          name: secretName,
-        },
-        type: "Opaque",
-        data: baseEncodedSecrets,
-      },
-
-      fieldManager: K8sService.FIELD_MANAGER,
-    })
-
-    return secret.metadata?.name as string
-  }
-
-  async updateSecretMap({
-    namespace,
-    secretName,
-    data,
-  }: CreateSecretMapParams) {
-    const baseEncodedSecrets = K8sService.GetBase64SecretData(data)
-
-    const secret = await this.k8sService.k8sApi.replaceNamespacedSecret({
-      name: secretName,
-      namespace,
-      body: {
-        apiVersion: "v1",
-        kind: "Secret",
-        metadata: {
-          name: secretName,
-        },
-        type: "Opaque",
-        data: baseEncodedSecrets,
-      },
-
-      fieldManager: K8sService.FIELD_MANAGER,
-    })
-
-    return secret.metadata?.name
-  }
-
-  async getSecretMap({
-    namespace,
-    secretName,
-  }: Omit<CreateSecretMapParams, "data">) {
-    const response = await this.k8sService.k8sApi.readNamespacedSecret({
-      name: secretName,
-      namespace,
-    })
-
-    return response
-  }
-
   async createDeployment({
     namespace,
     deploymentName,
@@ -113,13 +48,24 @@ export class ProjectService {
     replicas,
     labelName,
     serviceName,
-    data,
+    secretEnvs,
     secretName,
-  }: CreateDeploymentParams & CreateServiceParams & CreateSecretMapParams) {
-    const createdSecretMapName = await this.createSecretMap({
+    configName,
+    nonSecretEnvs,
+  }: CreateDeploymentParams &
+    CreateServiceParams &
+    CreateSecretMapParams &
+    CreateConfigMapParams) {
+    const createdSecretMapName = await this.k8sService.createSecretMap({
       namespace,
-      data,
+      secretEnvs,
       secretName,
+    })
+
+    const createdConfigMapName = await this.k8sService.createConfigMap({
+      namespace,
+      nonSecretEnvs,
+      configName,
     })
 
     const deployment = await this.k8sService.appsApi.createNamespacedDeployment(
@@ -151,13 +97,24 @@ export class ProjectService {
                       },
                     ],
                     env: [
-                      ...Object.keys(data).map((key) => {
+                      ...Object.keys(secretEnvs).map((key) => {
                         return {
-                          name: data[key].name,
+                          name: secretEnvs[key].name,
                           valueFrom: {
                             secretKeyRef: {
                               name: createdSecretMapName,
-                              key: data[key].value,
+                              key: secretEnvs[key].value,
+                            },
+                          },
+                        }
+                      }),
+                      ...Object.keys(nonSecretEnvs).map((key) => {
+                        return {
+                          name: nonSecretEnvs[key].name,
+                          valueFrom: {
+                            secretKeyRef: {
+                              name: createdConfigMapName,
+                              key: nonSecretEnvs[key].value,
                             },
                           },
                         }
@@ -173,7 +130,6 @@ export class ProjectService {
         fieldManager: K8sService.FIELD_MANAGER,
       }
     )
-    console.log("Deployment Created: ", deployment)
 
     const service = await this.k8sService.k8sApi.createNamespacedService({
       namespace,
@@ -200,6 +156,7 @@ export class ProjectService {
       fieldManager: K8sService.FIELD_MANAGER,
     })
 
+    console.log("Deployment Created: ", deployment)
     console.log("Service Created: ", service)
   }
 
@@ -212,24 +169,59 @@ export class ProjectService {
     replicas,
     labelName,
     secretName,
-    data,
+    secretEnvs,
     serviceName,
-  }: CreateDeploymentParams & CreateSecretMapParams & CreateServiceParams) {
+    configName,
+    nonSecretEnvs,
+  }: CreateDeploymentParams &
+    CreateSecretMapParams &
+    CreateServiceParams &
+    CreateConfigMapParams) {
     let secretMapName: string
+    let configMapName: string
 
-    const getExistedSecretMap = await this.getSecretMap({
+    const getExistedSecretMap = await this.k8sService.getSecretMap({
       namespace,
       secretName,
     })
 
+    const getExistedConfigMap = await this.k8sService.getConfigMap({
+      namespace,
+      configName,
+    })
+
+    // Create or update Config Map
+    if (!getExistedConfigMap) {
+      configMapName = await this.k8sService.createConfigMap({
+        nonSecretEnvs,
+        namespace,
+        configName,
+      })
+    } else {
+      const response = await this.k8sService.updateConfigMap({
+        nonSecretEnvs,
+        namespace,
+        configName,
+      })
+
+      configMapName = response.metadata?.name as string
+    }
+
+    // Create or update Secret Map
     if (!getExistedSecretMap) {
-      secretMapName = await this.createSecretMap({
-        data,
+      secretMapName = await this.k8sService.createSecretMap({
+        secretEnvs,
         namespace,
         secretName,
       })
     } else {
-      secretMapName = getExistedSecretMap.metadata?.name as string
+      const response = await this.k8sService.updateSecretMap({
+        secretEnvs,
+        namespace,
+        secretName,
+      })
+
+      secretMapName = response.metadata?.name as string
     }
 
     const updatedDeploymentResponse =
@@ -252,13 +244,24 @@ export class ProjectService {
                     image: image,
                     ports: [{ containerPort: containerPort }],
                     env: [
-                      ...Object.keys(data).map((key) => {
+                      ...Object.keys(secretEnvs).map((key) => {
                         return {
-                          name: data[key].name,
+                          name: secretEnvs[key].name,
                           valueFrom: {
                             secretKeyRef: {
                               name: secretMapName,
-                              key: data[key].value,
+                              key: secretEnvs[key].value,
+                            },
+                          },
+                        }
+                      }),
+                      ...Object.keys(nonSecretEnvs).map((key) => {
+                        return {
+                          name: nonSecretEnvs[key].name,
+                          valueFrom: {
+                            secretKeyRef: {
+                              name: configMapName,
+                              key: nonSecretEnvs[key].value,
                             },
                           },
                         }
@@ -303,6 +306,6 @@ export class ProjectService {
 
     console.log("Updated existing deployment:", updatedDeploymentResponse)
     console.log("Updated existing Service:", updatedService)
-    return data
+    return updatedDeploymentResponse
   }
 }

@@ -23,10 +23,12 @@ export class ProjectController {
       image: "dockermahin/sample-express",
       containerPort: 3000,
       replicas: 1,
-      data: {},
+      secretEnvs: {},
       labelName: "",
       secretName: "",
       serviceName: "",
+      configName: "",
+      nonSecretEnvs: {},
     })
     return res.status(200).json(new ApiResponse(200, "Deployment Created"))
   }
@@ -39,10 +41,12 @@ export class ProjectController {
       image: "dockermahin/sample-express",
       containerPort: 3000,
       replicas: 2,
-      data: {},
+      secretEnvs: {},
       labelName: "",
       secretName: "",
       serviceName: "",
+      configName: "",
+      nonSecretEnvs: {},
     })
     return res.status(200).json(new ApiResponse(200, "Deployment Updated"))
   }
