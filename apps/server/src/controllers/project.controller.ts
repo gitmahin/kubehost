@@ -29,6 +29,10 @@ export class ProjectController {
       serviceName: "",
       configName: "",
       nonSecretEnvs: {},
+      host: "",
+      ingressName: "",
+      servicePort: 3,
+      path: ""
     })
     return res.status(200).json(new ApiResponse(200, "Deployment Created"))
   }
@@ -47,6 +51,10 @@ export class ProjectController {
       serviceName: "",
       configName: "",
       nonSecretEnvs: {},
+        host: "",
+      ingressName: "",
+      servicePort: 3,
+      path: ""
     })
     return res.status(200).json(new ApiResponse(200, "Deployment Updated"))
   }

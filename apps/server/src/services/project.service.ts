@@ -1,9 +1,11 @@
 import { inject, injectable } from "inversify"
-import {
+import type {
   CreateConfigMapParams,
+  CreateIngressParams,
   CreateSecretMapParams,
-  K8sService,
 } from "./k8s.service"
+
+import { K8sService } from "./k8s.service"
 
 type CreateDeploymentParams = {
   namespace: string
@@ -52,10 +54,15 @@ export class ProjectService {
     secretName,
     configName,
     nonSecretEnvs,
+    host,
+    ingressName,
+    servicePort,
+    path,
   }: CreateDeploymentParams &
     CreateServiceParams &
     CreateSecretMapParams &
-    CreateConfigMapParams) {
+    CreateConfigMapParams &
+    CreateIngressParams) {
     const createdSecretMapName = await this.k8sService.createSecretMap({
       namespace,
       secretEnvs,
@@ -156,6 +163,15 @@ export class ProjectService {
       fieldManager: K8sService.FIELD_MANAGER,
     })
 
+    await this.k8sService.createIngress({
+      host,
+      ingressName,
+      namespace,
+      serviceName,
+      servicePort,
+      path,
+    })
+
     console.log("Deployment Created: ", deployment)
     console.log("Service Created: ", service)
   }
@@ -173,10 +189,15 @@ export class ProjectService {
     serviceName,
     configName,
     nonSecretEnvs,
+    host,
+    ingressName,
+    servicePort,
+    path,
   }: CreateDeploymentParams &
     CreateSecretMapParams &
     CreateServiceParams &
-    CreateConfigMapParams) {
+    CreateConfigMapParams &
+    CreateIngressParams) {
     let secretMapName: string
     let configMapName: string
 
@@ -303,6 +324,15 @@ export class ProjectService {
 
         fieldManager: K8sService.FIELD_MANAGER,
       })
+
+    await this.k8sService.createIngress({
+      host,
+      ingressName,
+      namespace,
+      serviceName,
+      servicePort,
+      path,
+    })
 
     console.log("Updated existing deployment:", updatedDeploymentResponse)
     console.log("Updated existing Service:", updatedService)

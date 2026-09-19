@@ -20,17 +20,28 @@ export type CreateConfigMapParams = {
   nonSecretEnvs: EnvMapDataType
 }
 
+export type CreateIngressParams = {
+  namespace: string
+  ingressName: string
+  host: string
+  path?: string
+  serviceName: string
+  servicePort: number
+}
+
 @injectable()
 export class K8sService {
   private kc
   public k8sApi
   public appsApi
+  public networkingApi
   public static FIELD_MANAGER: string = "kubehost"
   constructor() {
     this.kc = new k8s.KubeConfig()
     this.kc.loadFromDefault()
     this.k8sApi = this.kc.makeApiClient(k8s.CoreV1Api)
     this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api)
+    this.networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api)
   }
 
   async listAllPods() {
@@ -173,5 +184,104 @@ export class K8sService {
     })
 
     return response
+  }
+
+  async createIngress({
+    host,
+    namespace,
+    ingressName,
+    serviceName,
+    servicePort,
+    path = "/",
+  }: CreateIngressParams) {
+    await this.networkingApi.createNamespacedIngress({
+      namespace,
+      body: {
+        apiVersion: "networking.k8s.io/v1",
+        kind: "Ingress",
+        metadata: {
+          name: ingressName,
+          namespace,
+          annotations: {
+            "nginx.ingress.kubernetes.io/rewrite-target": "/",
+          },
+        },
+        spec: {
+          ingressClassName: "nginx",
+          rules: [
+            {
+              host,
+              http: {
+                paths: [
+                  {
+                    path,
+                    pathType: "Prefix",
+                    backend: {
+                      service: {
+                        name: serviceName,
+                        port: {
+                          number: servicePort,
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      fieldManager: K8sService.FIELD_MANAGER,
+    })
+  }
+
+ async updateIngress({
+    host,
+    namespace,
+    ingressName,
+    serviceName,
+    servicePort,
+    path = "/",
+  }: CreateIngressParams) {
+    await this.networkingApi.replaceNamespacedIngress({
+      name: ingressName,
+      namespace,
+      body: {
+        apiVersion: "networking.k8s.io/v1",
+        kind: "Ingress",
+        metadata: {
+          name: ingressName,
+          namespace,
+          annotations: {
+            "nginx.ingress.kubernetes.io/rewrite-target": "/",
+          },
+        },
+        spec: {
+          ingressClassName: "nginx",
+          rules: [
+            {
+              host,
+              http: {
+                paths: [
+                  {
+                    path,
+                    pathType: "Prefix",
+                    backend: {
+                      service: {
+                        name: serviceName,
+                        port: {
+                          number: servicePort,
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      fieldManager: K8sService.FIELD_MANAGER,
+    })
   }
 }
