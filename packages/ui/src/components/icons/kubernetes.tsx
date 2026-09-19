@@ -33,7 +33,7 @@ const Kubernetes = (props: SVGProps<SVGSVGElement>) => (
                 textTransform: "none",
                 direction: "ltr",
                 blockProgression: "tb",
-                // @ts-expect-error
+                // @ts-ignore
                 writingMode: "lr-tb",
                 textAnchor: "start",
                 baselineShift: "baseline",

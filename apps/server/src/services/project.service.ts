@@ -301,6 +301,7 @@ export class ProjectService {
     })
 
     console.log("Updated existing deployment:", updatedDeploymentResponse)
+    console.log("Updated existing Service:", updatedService)
     return data
   }
 }
