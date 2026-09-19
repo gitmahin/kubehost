@@ -1,4 +1,4 @@
-import type { NextFunction, RequestHandler, Request, Response } from "express";
+import type { NextFunction, RequestHandler, Request, Response } from "express"
 
 /**
  * A Higher-Order Function (HOF) that wraps asynchronous Express route handlers.
@@ -27,6 +27,6 @@ export const asyncHandler = (requestHandlerFn: RequestHandler) => {
      * If a rejection occurs, .catch(err => next(err)) bridges the error
      * to the centralized error handler.
      */
-    Promise.resolve(requestHandlerFn(req, res, next)).catch((err) => next(err));
-  };
-};
+    Promise.resolve(requestHandlerFn(req, res, next)).catch((err) => next(err))
+  }
+}

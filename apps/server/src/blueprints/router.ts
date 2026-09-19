@@ -1,6 +1,6 @@
-import type { Router } from "express";
+import type { Router } from "express"
 
 export interface IRouter {
-  createRouters(): void;
-  getRouters(): Router;
+  createRouters(): void
+  getRouters(): Router
 }

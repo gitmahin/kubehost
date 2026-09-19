@@ -1,8 +1,8 @@
-import { type ApiErrorType } from "@/types";
+import { type ApiErrorType } from "@/types"
 import {
   SystemCustomErrorMsgByCode,
   type SystemCustomErrorMessageDataType,
-} from "@/events";
+} from "@/events"
 
 /**
  * A standardized exception class for all API-related failures.
@@ -15,9 +15,9 @@ import {
  * throw new ApiError(400, SystemCustomErrorMsgByCode.INVALID_INPUT, undefined, ["Email is required"]);
  */
 export class ApiError extends Error implements ApiErrorType {
-  public success?: boolean;
-  public status: number;
-  public errors: unknown[];
+  public success?: boolean
+  public status: number
+  public errors: unknown[]
   constructor(
     status: number,
     public error:
@@ -26,15 +26,15 @@ export class ApiError extends Error implements ApiErrorType {
     override stack?: string,
     errors?: unknown[]
   ) {
-    super(error.message);
-    this.status = status;
-    this.success = false;
-    this.errors = errors ?? [];
+    super(error.message)
+    this.status = status
+    this.success = false
+    this.errors = errors ?? []
 
     if (stack) {
-      this.stack = stack;
+      this.stack = stack
     } else {
-      Error.captureStackTrace(this, this.constructor);
+      Error.captureStackTrace(this, this.constructor)
     }
   }
 }

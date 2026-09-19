@@ -1,27 +1,29 @@
-import { useWatch } from 'react-hook-form'
-import type { Control, FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form'
-import {  Trash2 } from 'lucide-react'
+import { useEffect, useRef } from "react"
+import { useWatch, Controller } from "react-hook-form"
+import type {
+  Control,
+  FieldErrors,
+  UseFormRegister,
+  UseFormSetValue,
+} from "react-hook-form"
+import { Key, Trash2 } from "lucide-react"
 import {
   Field,
-
   FieldError,
-  
   FieldLabel,
   Input,
   Button,
-} from '@workspace/ui/components'
-
-import type { ApplicationFormValues } from '@/zod'
-import { useEffect, useRef } from 'react'
+} from "@workspace/ui/components"
+import type { ApplicationFormValues } from "@/zod"
 
 function toEnvKey(name: string): string {
   return name
     .toLowerCase()
     .trim()
-    .replace(/_/g, '-')
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/_/g, "-")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
 }
 
 export function EnvVarRow({
@@ -44,15 +46,15 @@ export function EnvVarRow({
 
   useEffect(() => {
     if (keyManuallyEdited.current) return
-    setValue(`envVars.${index}.key`, toEnvKey(nameValue || ''), {
+    setValue(`envVars.${index}.key`, toEnvKey(nameValue || ""), {
       shouldValidate: true,
     })
   }, [nameValue, index, setValue])
 
   return (
-    <div className="flex flex-col gap-2 border rounded-md p-3">
+    <div className="flex flex-col gap-2 rounded-md border p-3">
       <div className="flex items-start gap-2">
-        <div className="flex-1 flex flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-2">
           <Field data-invalid={!!errors.envVars?.[index]?.name}>
             <FieldLabel htmlFor={`env-name-${index}`}>Name</FieldLabel>
             <Input
@@ -70,6 +72,7 @@ export function EnvVarRow({
             <Input
               id={`env-value-${index}`}
               placeholder="3000"
+              type="text"
               {...register(`envVars.${index}.value`)}
             />
             {errors.envVars?.[index]?.value && (
@@ -96,15 +99,27 @@ export function EnvVarRow({
           </Field>
         </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="mt-6 shrink-0"
-          onClick={onRemove}
-        >
-          <Trash2 className="w-4 h-4 text-destructive" />
-        </Button>
+        <div className="mt-6 flex shrink-0 flex-col gap-1">
+          <Controller
+            control={control}
+            name={`envVars.${index}.isSecret`}
+            render={({ field }) => (
+              <Button
+                type="button"
+                variant={field.value ? "default" : "ghost"}
+                size="icon"
+                title={field.value ? "Marked as secret" : "Mark as secret"}
+                onClick={() => field.onChange(!field.value)}
+              >
+                <Key className="h-4 w-4" />
+              </Button>
+            )}
+          />
+
+          <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
       </div>
     </div>
   )

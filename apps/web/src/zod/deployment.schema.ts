@@ -5,6 +5,7 @@ export class DeploymentSchema {
     key: z.string().min(1, "Key is required"),
     name: z.string().min(1, "Name is required"),
     value: z.string().min(1, "Value is required"),
+    isSecret: z.boolean().default(false),
   })
 
   static applicationSchema = z

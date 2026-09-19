@@ -1,4 +1,4 @@
-import { type ApiResponseType } from "@/types";
+import { type ApiResponseType } from "@/types"
 
 /**
  * A standardized wrapper for all successful API responses.
@@ -14,10 +14,10 @@ export class ApiResponse implements ApiResponseType {
     public success: boolean = status < 400,
     public title: string = ""
   ) {
-    this.status = status;
-    this.title = title;
-    this.message = message;
-    this.data = data;
-    this.success = success;
+    this.status = status
+    this.title = title
+    this.message = message
+    this.data = data
+    this.success = success
   }
 }

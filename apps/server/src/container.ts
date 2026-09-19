@@ -16,4 +16,3 @@ container.bind(ProjectController).toSelf().inSingletonScope()
 // Routers
 container.bind(ProjectRouter).toSelf().inSingletonScope()
 container.bind(ApiRouter).toSelf().inSingletonScope()
-

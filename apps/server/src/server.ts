@@ -1,24 +1,24 @@
-import express from "express";
-import type { Express } from "express";
-import requestIp from "request-ip";
-import cookieParser from "cookie-parser";
-import cors, { type CorsOptions } from "cors";
+import express from "express"
+import type { Express } from "express"
+import requestIp from "request-ip"
+import cookieParser from "cookie-parser"
+import cors, { type CorsOptions } from "cors"
 
 type ExpressServerConstructorTypes = {
-  corsOptions?: CorsOptions;
-  json_limit?: string;
-  urlencode_json_limit?: string;
-};
+  corsOptions?: CorsOptions
+  json_limit?: string
+  urlencode_json_limit?: string
+}
 
 export class ExpressServer {
-  private static app: Express;
+  private static app: Express
   constructor({
     corsOptions,
     json_limit,
     urlencode_json_limit,
   }: ExpressServerConstructorTypes = {}) {
     if (!ExpressServer.app) {
-      ExpressServer.app = express();
+      ExpressServer.app = express()
     }
 
     ExpressServer.app.use(
@@ -30,7 +30,7 @@ export class ExpressServer {
               credentials: true,
             }
       )
-    );
+    )
 
     ExpressServer.app
       .use(express.json({ limit: json_limit ?? "500kb" }))
@@ -41,10 +41,10 @@ export class ExpressServer {
         })
       )
       .use(cookieParser())
-      .use(requestIp.mw());
+      .use(requestIp.mw())
   }
 
   GetApp() {
-    return ExpressServer.app;
+    return ExpressServer.app
   }
 }

@@ -18,23 +18,31 @@ export class ProjectController {
   async createDeploymentHandler(req: Request, res: Response) {
     this.projectService.createDeployment({
       namespace: "my-demo-project",
-      name: "sample-express",
+      deploymentName: "sample-express",
       containerName: "sample-express",
       image: "dockermahin/sample-express",
       containerPort: 3000,
-      replicas: 1
+      replicas: 1,
+      data: {},
+      labelName: "",
+      secretName: "",
+      serviceName: "",
     })
     return res.status(200).json(new ApiResponse(200, "Deployment Created"))
   }
 
-    async updateDeploymentHandler(req: Request, res: Response) {
+  async updateDeploymentHandler(req: Request, res: Response) {
     this.projectService.updateDeployment({
       namespace: "my-demo-project",
-      name: "sample-express",
+      deploymentName: "sample-express",
       containerName: "sample-express",
       image: "dockermahin/sample-express",
       containerPort: 3000,
-      replicas: 2
+      replicas: 2,
+      data: {},
+      labelName: "",
+      secretName: "",
+      serviceName: "",
     })
     return res.status(200).json(new ApiResponse(200, "Deployment Updated"))
   }

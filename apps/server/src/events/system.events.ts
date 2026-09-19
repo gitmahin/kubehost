@@ -5,7 +5,6 @@ enum SYSTEM_CUSTOM_ERROR_EVENTS {
 
   // -- 400: bad request / validation --
   VALIDATION_ERROR = "VALIDATION_ERROR",
- 
 }
 
 export const SystemCustomErrorCode: Record<SYSTEM_CUSTOM_ERROR_EVENTS, string> =
@@ -15,18 +14,17 @@ export const SystemCustomErrorCode: Record<SYSTEM_CUSTOM_ERROR_EVENTS, string> =
     UNKNOWN_ERROR: "50001",
 
     VALIDATION_ERROR: "40001",
-   
-  };
+  }
 
 export type SystemCustomErrorMessageDataType = {
-  title?: string;
-  message: string;
-  code: string;
-};
+  title?: string
+  message: string
+  code: string
+}
 
 type SystemCustomErrorMessageType = {
-  [key: string]: SystemCustomErrorMessageDataType;
-};
+  [key: string]: SystemCustomErrorMessageDataType
+}
 
 /**
  * Lookup table for system-wide error messages.
@@ -63,7 +61,7 @@ export const SystemCustomErrorMsgByCode: SystemCustomErrorMessageType = {
     message: "One or more fields failed validation.",
     code: SystemCustomErrorCode.VALIDATION_ERROR,
   },
-};
+}
 
 /**
  * Retrieves structured error metadata (title, message, and code) for a specific error key.
@@ -82,5 +80,5 @@ export const SystemCustomErrorMsgByCode: SystemCustomErrorMessageType = {
 export const getSystemCustomErrorMsgByKey = (
   key: keyof typeof SYSTEM_CUSTOM_ERROR_EVENTS
 ) => {
-  return SystemCustomErrorMsgByCode[SystemCustomErrorCode[key]]!;
-};
+  return SystemCustomErrorMsgByCode[SystemCustomErrorCode[key]]!
+}

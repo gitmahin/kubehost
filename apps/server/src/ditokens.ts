@@ -1,3 +1,1 @@
-export const DITokens = {
- 
-};
+export const DITokens = {}

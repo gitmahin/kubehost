@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus } from 'lucide-react'
+import { createFileRoute } from "@tanstack/react-router"
+import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Plus } from "lucide-react"
 import {
   Field,
   FieldDescription,
@@ -13,13 +13,13 @@ import {
   FieldSeparator,
   FieldSet,
   Button,
-} from '@workspace/ui/components'
-import { DeploymentSchema } from '@/zod'
-import type { ApplicationFormValues } from '@/zod'
-import { EnvVarRow } from '@/components/deployments'
+} from "@workspace/ui/components"
+import { DeploymentSchema } from "@/zod"
+import type { ApplicationFormValues } from "@/zod"
+import { EnvVarRow } from "@/components/deployments"
 
 export const Route = createFileRoute(
-  '/_pathlessMain/projects/create/application/',
+  "/_pathlessMain/projects/create/application/"
 )({
   component: RouteComponent,
 })
@@ -30,8 +30,6 @@ export type SecretMapDataType = {
     value: string
   }
 }
-
-
 
 function RouteComponent() {
   const {
@@ -46,34 +44,41 @@ function RouteComponent() {
     defaultValues: {
       replicas: 1,
       envVars: [],
-      visibility: 'private',
+      visibility: "private",
     },
   })
 
-  const visibility = useWatch({ control, name: 'visibility' })
+  const visibility = useWatch({ control, name: "visibility" })
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: 'envVars',
+    name: "envVars",
   })
-
   const onSubmit = (values: ApplicationFormValues) => {
-    const envData: SecretMapDataType = Object.fromEntries(
-      values.envVars.map(({ key, name, value }) => [key, { name, value }])
-    )
+    const secretEnvs: SecretMapDataType = {}
+    const nonSecretEnvs: SecretMapDataType = {}
+
+    for (const { key, name, value, isSecret } of values.envVars) {
+      const target = isSecret ? secretEnvs : nonSecretEnvs
+      target[key] = { name, value }
+    }
+
     console.log({
       ...values,
-      envVars: envData,
+      secretEnvs,
+      nonSecretEnvs,
     })
   }
 
   return (
-    <div className='w-full flex justify-center items-center mt-16 pb-20'>
-
-      <form onSubmit={
-        // @ts-ignore
-        handleSubmit(onSubmit)
-      } className='max-w-[500px] w-full'>
+    <div className="mt-16 flex w-full items-center justify-center pb-20">
+      <form
+        onSubmit={
+          // @ts-ignore
+          handleSubmit(onSubmit)
+        }
+        className="w-full max-w-[500px]"
+      >
         <FieldGroup>
           <FieldSet>
             <FieldLegend>Deploy New Application</FieldLegend>
@@ -87,9 +92,11 @@ function RouteComponent() {
                   id="image"
                   placeholder="nginx:latest"
                   aria-invalid={!!errors.image}
-                  {...register('image')}
+                  {...register("image")}
                 />
-                {errors.image && <FieldError>{errors.image.message}</FieldError>}
+                {errors.image && (
+                  <FieldError>{errors.image.message}</FieldError>
+                )}
               </Field>
 
               <Field data-invalid={!!errors.containerName}>
@@ -98,7 +105,7 @@ function RouteComponent() {
                   id="container-name"
                   placeholder="my-app-container"
                   aria-invalid={!!errors.containerName}
-                  {...register('containerName')}
+                  {...register("containerName")}
                 />
                 {errors.containerName && (
                   <FieldError>{errors.containerName.message}</FieldError>
@@ -107,16 +114,18 @@ function RouteComponent() {
 
               <Field orientation="horizontal">
                 <Field data-invalid={!!errors.containerPort}>
-                  <FieldLabel htmlFor="container-port">Container Port</FieldLabel>
+                  <FieldLabel htmlFor="container-port">
+                    Container Port
+                  </FieldLabel>
                   <Input
                     id="container-port"
                     type="number"
                     placeholder="8080"
                     aria-invalid={!!errors.containerPort}
                     onKeyDown={(e) => {
-                      if (e.key === '-' || e.key === 'e') e.preventDefault()
+                      if (e.key === "-" || e.key === "e") e.preventDefault()
                     }}
-                    {...register('containerPort')}
+                    {...register("containerPort")}
                   />
                   {errors.containerPort && (
                     <FieldError>{errors.containerPort.message}</FieldError>
@@ -131,9 +140,9 @@ function RouteComponent() {
                     placeholder="80"
                     aria-invalid={!!errors.portBinding}
                     onKeyDown={(e) => {
-                      if (e.key === '-' || e.key === 'e') e.preventDefault()
+                      if (e.key === "-" || e.key === "e") e.preventDefault()
                     }}
-                    {...register('portBinding')}
+                    {...register("portBinding")}
                   />
                   {errors.portBinding && (
                     <FieldError>{errors.portBinding.message}</FieldError>
@@ -149,11 +158,13 @@ function RouteComponent() {
                   placeholder="1"
                   aria-invalid={!!errors.replicas}
                   onKeyDown={(e) => {
-                    if (e.key === '-' || e.key === 'e') e.preventDefault()
+                    if (e.key === "-" || e.key === "e") e.preventDefault()
                   }}
-                  {...register('replicas')}
+                  {...register("replicas")}
                 />
-                {errors.replicas && <FieldError>{errors.replicas.message}</FieldError>}
+                {errors.replicas && (
+                  <FieldError>{errors.replicas.message}</FieldError>
+                )}
               </Field>
             </FieldGroup>
           </FieldSet>
@@ -174,17 +185,21 @@ function RouteComponent() {
                     <div className="flex gap-2">
                       <Button
                         type="button"
-                        variant={field.value === 'private' ? 'default' : 'outline'}
+                        variant={
+                          field.value === "private" ? "default" : "outline"
+                        }
                         className="flex-1"
-                        onClick={() => field.onChange('private')}
+                        onClick={() => field.onChange("private")}
                       >
                         Private
                       </Button>
                       <Button
                         type="button"
-                        variant={field.value === 'public' ? 'default' : 'outline'}
+                        variant={
+                          field.value === "public" ? "default" : "outline"
+                        }
                         className="flex-1"
-                        onClick={() => field.onChange('public')}
+                        onClick={() => field.onChange("public")}
                       >
                         Public
                       </Button>
@@ -195,7 +210,7 @@ function RouteComponent() {
             </FieldGroup>
           </FieldSet>
 
-          {visibility === 'public' && (
+          {visibility === "public" && (
             <>
               <FieldSeparator />
               <FieldSet>
@@ -210,35 +225,40 @@ function RouteComponent() {
                       id="host"
                       placeholder="app.example.com"
                       aria-invalid={!!errors.host}
-                      {...register('host')}
+                      {...register("host")}
                     />
-                    {errors.host && <FieldError>{errors.host.message}</FieldError>}
+                    {errors.host && (
+                      <FieldError>{errors.host.message}</FieldError>
+                    )}
                   </Field>
 
                   <Field data-invalid={!!errors.path}>
                     <FieldLabel htmlFor="path">
-                      Path <span className="text-muted-foreground">(optional)</span>
+                      Path{" "}
+                      <span className="text-muted-foreground">(optional)</span>
                     </FieldLabel>
                     <Input
                       id="path"
                       placeholder="/"
                       aria-invalid={!!errors.path}
-                      {...register('path')}
+                      {...register("path")}
                     />
-                    {errors.path && <FieldError>{errors.path.message}</FieldError>}
+                    {errors.path && (
+                      <FieldError>{errors.path.message}</FieldError>
+                    )}
                   </Field>
                 </FieldGroup>
               </FieldSet>
             </>
           )}
 
-
           <FieldSeparator />
 
           <FieldSet>
             <FieldLegend>Environment Variables</FieldLegend>
             <FieldDescription>
-              Key is auto-generated from the variable name (used internally by Kubernetes)
+              Key is auto-generated from the variable name (used internally by
+              Kubernetes)
             </FieldDescription>
             <FieldGroup>
               {fields.map((field, index) => (
@@ -258,9 +278,11 @@ function RouteComponent() {
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={() => append({ key: '', name: '', value: '' })}
+                onClick={() =>
+                  append({ key: "", name: "", value: "", isSecret: false })
+                }
               >
-                <Plus className="w-4 h-4" /> Add Environment Variable
+                <Plus className="h-4 w-4" /> Add Environment Variable
               </Button>
             </FieldGroup>
           </FieldSet>

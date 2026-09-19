@@ -1,4 +1,4 @@
-import z4 from "zod";
+import z4 from "zod"
 
 /**
  * Transforms a Zod raw shape by making every property "nullish"
@@ -27,5 +27,5 @@ export function toNullish<T extends z4.ZodRawShape>(shape: T) {
       key,
       (schema as z4.ZodType).nullish(),
     ])
-  ) as unknown as { [K in keyof T]: z4.ZodOptional<z4.ZodNullable<T[K]>> };
+  ) as unknown as { [K in keyof T]: z4.ZodOptional<z4.ZodNullable<T[K]>> }
 }

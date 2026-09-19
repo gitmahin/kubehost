@@ -35,7 +35,7 @@ export class ProjectRouter implements IRouter {
         )
       )
 
-       this.router
+    this.router
       .route("/deployments")
       .patch(
         asyncHandler(

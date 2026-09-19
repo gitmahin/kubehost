@@ -274,31 +274,32 @@ export class ProjectService {
         fieldManager: K8sService.FIELD_MANAGER,
       })
 
-    const updatedService = await this.k8sService.k8sApi.replaceNamespacedService({
-      name: serviceName,
-      namespace,
-      body: {
-        apiVersion: "v1",
-        kind: "Service",
-        metadata: {
-          name: serviceName,
-        },
-        spec: {
-          selector: {
-            app: labelName,
+    const updatedService =
+      await this.k8sService.k8sApi.replaceNamespacedService({
+        name: serviceName,
+        namespace,
+        body: {
+          apiVersion: "v1",
+          kind: "Service",
+          metadata: {
+            name: serviceName,
           },
-          ports: [
-            {
-              protocol: "TCP",
-              port: 80,
-              targetPort: containerPort,
+          spec: {
+            selector: {
+              app: labelName,
             },
-          ],
+            ports: [
+              {
+                protocol: "TCP",
+                port: 80,
+                targetPort: containerPort,
+              },
+            ],
+          },
         },
-      },
 
-      fieldManager: K8sService.FIELD_MANAGER,
-    })
+        fieldManager: K8sService.FIELD_MANAGER,
+      })
 
     console.log("Updated existing deployment:", updatedDeploymentResponse)
     console.log("Updated existing Service:", updatedService)

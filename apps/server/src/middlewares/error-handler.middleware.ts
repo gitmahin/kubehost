@@ -1,9 +1,9 @@
-import { baseConfig } from "@/config";
-import { SystemCustomErrorCode, SystemCustomErrorMsgByCode } from "@/events";
-import { ApiError } from "@/libs";
-import type { ApiErrorType } from "@/types";
+import { baseConfig } from "@/config"
+import { SystemCustomErrorCode, SystemCustomErrorMsgByCode } from "@/events"
+import { ApiError } from "@/libs"
+import type { ApiErrorType } from "@/types"
 
-import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express"
 
 /**
  * Global Error Handling Middleware for Express.
@@ -25,16 +25,16 @@ export const errorHandlerMiddleware = (
   res: Response,
   _next: NextFunction
 ) => {
-  let error: ApiError;
+  let error: ApiError
   /**
    * Normalization
    * If the error is not already an instance of our custom ApiError,
    * we wrap it in a 500 Internal Server Error structure.
    */
   if (err instanceof ApiError) {
-    error = err;
+    error = err
   } else {
-    const message = err?.message || "Something went wrong";
+    const message = err?.message || "Something went wrong"
 
     // Create a new ApiError representing a generic system failure
     error = new ApiError(
@@ -47,7 +47,7 @@ export const errorHandlerMiddleware = (
       },
       err.stack,
       []
-    );
+    )
   }
 
   /**
@@ -56,20 +56,20 @@ export const errorHandlerMiddleware = (
    * This allows the logging middleware to capture the error context
    * after the response has been sent.
    */
-  res.locals.errorTitle = error.error.title;
-  res.locals.errorMessage = error.error.message;
-  res.locals.errorCode = error.error.code;
-  res.locals.errors = error.errors;
+  res.locals.errorTitle = error.error.title
+  res.locals.errorMessage = error.error.message
+  res.locals.errorCode = error.error.code
+  res.locals.errors = error.errors
 
-  const status = error.status;
-  const success = error.success;
+  const status = error.status
+  const success = error.success
   const response: ApiErrorType = {
     ...error.error,
     status,
     success,
     ...(baseConfig.NODE_ENV === "development" ? { stack: error.stack } : {}),
     errors: error.errors,
-  };
+  }
 
-  res.status(status).json(response);
-};
+  res.status(status).json(response)
+}

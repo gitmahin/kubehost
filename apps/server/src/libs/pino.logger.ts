@@ -1,5 +1,5 @@
-import pino, { type HttpLogger, type Options } from "pino-http";
-import { type Logger } from "pino";
+import pino, { type HttpLogger, type Options } from "pino-http"
+import { type Logger } from "pino"
 
 const config = {
   transport: {
@@ -16,17 +16,17 @@ const config = {
     ],
   },
   level: "debug",
-};
+}
 
 class PinoLogger {
-  private logger: HttpLogger | null = null;
+  private logger: HttpLogger | null = null
 
   createLogger(options: Options = {}): Logger {
     if (!this.logger) {
-      this.logger = pino({ ...config, ...options });
+      this.logger = pino({ ...config, ...options })
     }
-    return this.logger.logger;
+    return this.logger.logger
   }
 }
 
-export const pinoLogger = new PinoLogger();
+export const pinoLogger = new PinoLogger()

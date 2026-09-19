@@ -1,6 +1,6 @@
-import { ZodBase, type IdZType } from "@/zod";
-import { injectable } from "inversify";
-import type z from "zod";
+import { ZodBase, type IdZType } from "@/zod"
+import { injectable } from "inversify"
+import type z from "zod"
 
 @injectable()
 export class Validator {
@@ -8,19 +8,19 @@ export class Validator {
     payload: unknown,
     schema: z.ZodType<T>
   ): z.ZodSafeParseResult<T> {
-    const validatePayload = schema.safeParse(payload);
+    const validatePayload = schema.safeParse(payload)
     if (validatePayload.error && !validatePayload.success) {
-      return { error: validatePayload.error, success: false };
+      return { error: validatePayload.error, success: false }
     }
-    return { data: validatePayload.data, success: true };
+    return { data: validatePayload.data, success: true }
   }
 
   idInput(payload: IdZType): IdZType | z.ZodError {
-    const { data, success, error } = this.validate(payload, ZodBase.id);
+    const { data, success, error } = this.validate(payload, ZodBase.id)
 
     if (!success) {
-      return error;
+      return error
     }
-    return data;
+    return data
   }
 }

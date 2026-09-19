@@ -38,7 +38,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="overflow-x-hidden dark">
+      <body className="dark overflow-x-hidden">
         {children}
         <Scripts />
       </body>
