@@ -1,28 +1,25 @@
-import { Router } from "express";
-import type { IRouter } from "@/blueprints";
-import { inject, injectable } from "inversify";
-
+import { Router } from "express"
+import type { IRouter } from "@/blueprints"
+import { inject, injectable } from "inversify"
+import { ProjectRouter } from "./project.route"
 
 @injectable()
 export class ApiRouter implements IRouter {
-  private router: Router;
+  private router: Router
 
   constructor(
-    // @inject(UserRouter)
-    // private userRouter: UserRouter,
-
+    @inject(ProjectRouter)
+    private projectRouter: ProjectRouter
   ) {
-    this.router = Router();
-    // this.userRouter.createRouters();
-
+    this.router = Router()
+    this.projectRouter.createRouters()
   }
 
   createRouters(): void {
-    // this.router.use("/v1/users", this.userRouter.getRouters());
-
+    this.router.use("/v1/projects", this.projectRouter.getRouters())
   }
 
   getRouters(): Router {
-    return this.router;
+    return this.router
   }
 }
