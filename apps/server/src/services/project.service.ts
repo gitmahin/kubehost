@@ -9,49 +9,8 @@ import { K8sService } from "./k8s.service"
 import { ApiError } from "@/libs"
 import { getSystemCustomErrorMsgByKey } from "@/events"
 import type { ApplicationCreateInputType } from "@repo/zod"
+import type { DeploymentDashboard} from "@repo/types"
 
-type DeploymentDashboard = {
-  deployment: {
-    name?: string
-    namespace?: string
-    image?: string
-    containerPort?: number
-    replicas: {
-      desired: number
-      ready: number
-      available: number
-      updated: number
-    }
-    createdAt?: Date
-  }
-
-  service?: {
-    name?: string
-    type?: string
-    clusterIP?: string
-    ports: Array<{
-      port?: number
-      targetPort?: number | string
-      protocol?: string
-    }>
-  }
-
-  ingress: Array<{
-    name?: string
-    host?: string
-    path?: string
-    pathType?: string
-  }>
-
-  pods: Array<{
-    name?: string
-    status?: string
-    podIP?: string
-    nodeName?: string
-    restarts: number
-    createdAt?: Date
-  }>
-}
 
 export type DeploymentEditData = {
   deploymentName: string

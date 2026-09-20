@@ -66,40 +66,6 @@ export const Route = createFileRoute(
   component: RouteComponent,
 })
 
-/**
- * ClientOnly wrapper prevents SSR hydration mismatches (Error #419)
- * for DOM/Window-dependent libraries like Recharts.
- */
-function ClientOnly({
-  children,
-  fallback,
-}: {
-  children: ReactNode
-  fallback?: ReactNode
-}) {
-  const [hasMounted, setHasMounted] = useState(false)
-
-  useEffect(() => {
-    setHasMounted(true)
-  }, [])
-
-  if (!hasMounted) {
-    return (
-      fallback ?? (
-        <div className="flex h-full w-full items-center justify-center rounded bg-zinc-900/20">
-          <Skeleton
-            width="100%"
-            height={180}
-            baseColor="#27272a"
-            highlightColor="#3f3f46"
-          />
-        </div>
-      )
-    )
-  }
-
-  return <>{children}</>
-}
 
 type Pod = {
   name?: string
@@ -494,7 +460,7 @@ function RouteComponent() {
       </div>
 
       {/* Analytics & Charts Section (Wrapped in ClientOnly to fix Hydration Error #419) */}
-      <ClientOnly>
+  
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card className="border-zinc-800 bg-zinc-900/40">
             <CardHeader>
@@ -577,7 +543,7 @@ function RouteComponent() {
             </CardContent>
           </Card>
         </div>
-      </ClientOnly>
+    
 
       {/* Pod Instances Table */}
       <Card className="border-zinc-800 bg-zinc-900/40">

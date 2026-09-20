@@ -8,12 +8,6 @@ import { nitro } from "nitro/vite";
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact(),     nitro()],
-  ssr: {
-    noExternal: ['recharts'],
-  },
-  optimizeDeps: {
-    include: ['recharts'],
-  },
 })
 
 export default config
