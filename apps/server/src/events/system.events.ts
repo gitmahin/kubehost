@@ -5,6 +5,10 @@ enum SYSTEM_CUSTOM_ERROR_EVENTS {
 
   // -- 400: bad request / validation --
   VALIDATION_ERROR = "VALIDATION_ERROR",
+ // -- 409: conflict --
+   INGRESS_ALREADY_EXISTS = "INGRESS_ALREADY_EXISTS",
+  NAMESPACE_ALREADY_EXISTS = "NAMESPACE_ALREADY_EXISTS",
+  DEPLOYMENT_ALREADY_EXISTS = "DEPLOYMENT_ALREADY_EXISTS",
 }
 
 export const SystemCustomErrorCode: Record<SYSTEM_CUSTOM_ERROR_EVENTS, string> =
@@ -14,6 +18,11 @@ export const SystemCustomErrorCode: Record<SYSTEM_CUSTOM_ERROR_EVENTS, string> =
     UNKNOWN_ERROR: "50001",
 
     VALIDATION_ERROR: "40001",
+
+
+  INGRESS_ALREADY_EXISTS: "40901",
+  NAMESPACE_ALREADY_EXISTS: "40902",
+  DEPLOYMENT_ALREADY_EXISTS: "40903",
   }
 
 export type SystemCustomErrorMessageDataType = {
@@ -60,6 +69,22 @@ export const SystemCustomErrorMsgByCode: SystemCustomErrorMessageType = {
     title: "Invalid Input",
     message: "One or more fields failed validation.",
     code: SystemCustomErrorCode.VALIDATION_ERROR,
+  },
+
+   [SystemCustomErrorCode.INGRESS_ALREADY_EXISTS]: {
+    title: "Ingress Already Exists",
+    message: "An ingress with this name already exists in the namespace.",
+    code: SystemCustomErrorCode.INGRESS_ALREADY_EXISTS,
+  },
+  [SystemCustomErrorCode.NAMESPACE_ALREADY_EXISTS]: {
+    title: "Project Already Exists",
+    message: "A project with this name already exists.",
+    code: SystemCustomErrorCode.NAMESPACE_ALREADY_EXISTS,
+  },
+  [SystemCustomErrorCode.DEPLOYMENT_ALREADY_EXISTS]: {
+    title: "Deployment Already Exists",
+    message: "A deployment with this name already exists in the namespace.",
+    code: SystemCustomErrorCode.DEPLOYMENT_ALREADY_EXISTS,
   },
 }
 

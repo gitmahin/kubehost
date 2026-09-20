@@ -1,12 +1,39 @@
 import z from "zod"
+import { ZodBase } from "./base.zod"
 
-export class DeploymentSchema {
+export class ProjectZSchema extends ZodBase {
+  static projectName = z
+    .string()
+    .min(1, "Project name is required")
+    .max(63, "Project name must be 63 characters or fewer")
+    .regex(
+      /^[a-zA-Z0-9-]+$/,
+      "Only letters, numbers, and hyphens are allowed - no spaces or special characters"
+    )
+
+  static deploymentName = z
+    .string()
+    .min(1, "Deployment name is required")
+    .max(70, "Deployment name must be 70 characters or fewer")
+    .regex(
+      /^[a-zA-Z0-9-]+$/,
+      "Only letters, numbers, and hyphens are allowed - no spaces or special characters"
+    )
+
   static envVarSchema = z.object({
     key: z.string().min(1, "Key is required"),
     name: z.string().min(1, "Name is required"),
     value: z.string().min(1, "Value is required"),
     isSecret: z.boolean().default(false),
   })
+
+  static envMapDataSchema = z.record(
+    z.string(),
+    z.object({
+      name: z.string(),
+      value: z.string(),
+    })
+  )
 
   static applicationSchema = z
     .object({
@@ -34,14 +61,32 @@ export class DeploymentSchema {
     .superRefine((data, ctx) => {
       if (data.visibility === "public" && !data.host) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: "Host is required for public deployments",
           path: ["host"],
         })
       }
     })
+
+  static applicationDeploymentServerSchema = this.applicationSchema.extend({
+    projectName: this.projectName,
+    deploymentName: this.deploymentName,
+    secretEnvs: this.envMapDataSchema,
+    nonSecretEnvs: this.envMapDataSchema,
+  }).omit({
+    envVars: true
+  })
+
+
 }
 
-export type ApplicationFormValues = z.infer<
-  typeof DeploymentSchema.applicationSchema
+export type ProjectNameInputType = z.infer<typeof ProjectZSchema.projectName>
+
+export type ApplicationCreateInputType = z.infer<
+  typeof ProjectZSchema.applicationSchema
+>
+
+
+export type ApplicationCreateServerInputType = z.infer<
+  typeof ProjectZSchema.applicationDeploymentServerSchema
 >

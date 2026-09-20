@@ -14,7 +14,7 @@ import {
   Input,
   Button,
 } from "@workspace/ui/components"
-import type { ApplicationFormValues } from "@/zod"
+import type { ApplicationCreateInputType } from "@repo/zod"
 
 function toEnvKey(name: string): string {
   return name
@@ -34,11 +34,11 @@ export function EnvVarRow({
   errors,
   onRemove,
 }: {
-  control: Control<ApplicationFormValues>
+  control: Control<ApplicationCreateInputType>
   index: number
-  register: UseFormRegister<ApplicationFormValues>
-  setValue: UseFormSetValue<ApplicationFormValues>
-  errors: FieldErrors<ApplicationFormValues>
+  register: UseFormRegister<ApplicationCreateInputType>
+  setValue: UseFormSetValue<ApplicationCreateInputType>
+  errors: FieldErrors<ApplicationCreateInputType>
   onRemove: () => void
 }) {
   const nameValue = useWatch({ control, name: `envVars.${index}.name` })

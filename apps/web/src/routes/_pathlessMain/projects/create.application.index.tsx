@@ -14,8 +14,8 @@ import {
   FieldSet,
   Button,
 } from "@workspace/ui/components"
-import { DeploymentSchema } from "@/zod"
-import type { ApplicationFormValues } from "@/zod"
+import { ProjectZSchema } from "@repo/zod"
+import type { ApplicationCreateInputType } from "@repo/zod"
 import { EnvVarRow } from "@/components/deployments"
 
 export const Route = createFileRoute(
@@ -38,9 +38,9 @@ function RouteComponent() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<ApplicationFormValues>({
+  } = useForm<ApplicationCreateInputType>({
     // @ts-ignore
-    resolver: zodResolver(DeploymentSchema.applicationSchema),
+    resolver: zodResolver(ProjectZSchema.applicationSchema),
     defaultValues: {
       replicas: 1,
       envVars: [],
@@ -54,7 +54,7 @@ function RouteComponent() {
     control,
     name: "envVars",
   })
-  const onSubmit = (values: ApplicationFormValues) => {
+  const onSubmit = (values: ApplicationCreateInputType) => {
     const secretEnvs: SecretMapDataType = {}
     const nonSecretEnvs: SecretMapDataType = {}
 

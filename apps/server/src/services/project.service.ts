@@ -6,6 +6,9 @@ import type {
 } from "./k8s.service"
 
 import { K8sService } from "./k8s.service"
+import { ApiError } from "@/libs"
+import { getSystemCustomErrorMsgByKey } from "@/events"
+import type { ApplicationCreateInputType } from "@repo/zod"
 
 type CreateDeploymentParams = {
   namespace: string
@@ -13,6 +16,7 @@ type CreateDeploymentParams = {
   containerName: string
   image: string
   containerPort: number
+  visibility: ApplicationCreateInputType["visibility"]
   replicas: number
   labelName: string
 }
@@ -28,17 +32,87 @@ export class ProjectService {
     private k8sService: K8sService
   ) {}
   async createNewProject(projectName: string) {
-    const namespace = {
-      metadata: {
-        name: projectName,
-      },
+    const existedNamespace = await this.k8sService.k8sApi.readNamespace({
+      name: projectName,
+    })
+    if (existedNamespace.metadata?.name) {
+      throw new ApiError(
+        400,
+        getSystemCustomErrorMsgByKey("NAMESPACE_ALREADY_EXISTS")
+      )
     }
-
     const response = await this.k8sService.k8sApi.createNamespace({
-      body: namespace,
+      body: {
+        metadata: {
+          name: projectName,
+        },
+      },
+      fieldManager: K8sService.FIELD_MANAGER,
     })
 
     return response
+  }
+
+  async getProjectNames() {
+    const response = await this.k8sService.k8sApi.listNamespace()
+
+    return response.items
+      .filter((ns) =>
+        ns.metadata?.managedFields?.some(
+          (mf) => mf.manager === K8sService.FIELD_MANAGER
+        )
+      )
+      .map((ns) => ({
+        name: ns.metadata?.name,
+        status: ns.status?.phase,
+        createdAt: ns.metadata?.creationTimestamp,
+      }))
+  }
+
+  async getDeployments(namespace: string) {
+    const response = namespace
+      ? await this.k8sService.appsApi.listNamespacedDeployment({ namespace })
+      : await this.k8sService.appsApi.listDeploymentForAllNamespaces()
+
+    const filtered = response.items.filter((deployment) => {
+      const isManaged = deployment.metadata?.managedFields?.some(
+        (mf) => mf.manager === K8sService.FIELD_MANAGER
+      )
+      console.log(
+        deployment.metadata?.name,
+        "-> managed by kubehost?",
+        isManaged
+      )
+      return isManaged
+    })
+
+    console.log("Filtered count:", filtered.length)
+
+    return filtered.map((deployment) => {
+      const container = deployment.spec?.template?.spec?.containers?.[0]
+
+      const availableCondition = deployment.status?.conditions?.find(
+        (c) => c.type === "Available"
+      )
+
+      return {
+        name: deployment.metadata?.name,
+        namespace: deployment.metadata?.namespace,
+        image: container?.image,
+        containerPort: container?.ports?.[0]?.containerPort,
+
+        replicas: {
+          desired: deployment.spec?.replicas ?? 0,
+          ready: deployment.status?.readyReplicas ?? 0,
+          available: deployment.status?.availableReplicas ?? 0,
+          updated: deployment.status?.updatedReplicas ?? 0,
+        },
+        status: availableCondition?.status === "True" ? "Running" : "Not Ready",
+        statusMessage: availableCondition?.message,
+        createdAt: deployment.metadata?.creationTimestamp,
+        labels: deployment.metadata?.labels,
+      }
+    })
   }
 
   async createDeployment({
@@ -57,12 +131,26 @@ export class ProjectService {
     host,
     ingressName,
     servicePort,
+    visibility,
     path,
   }: CreateDeploymentParams &
     CreateServiceParams &
     CreateSecretMapParams &
     CreateConfigMapParams &
     CreateIngressParams) {
+    const existedDeployment =
+      await this.k8sService.appsApi.readNamespacedDeployment({
+        name: deploymentName,
+        namespace,
+      })
+
+    if (existedDeployment.metadata?.name) {
+      throw new ApiError(
+        400,
+        getSystemCustomErrorMsgByKey("DEPLOYMENT_ALREADY_EXISTS")
+      )
+    }
+
     const createdSecretMapName = await this.k8sService.createSecretMap({
       namespace,
       secretEnvs,
@@ -106,22 +194,22 @@ export class ProjectService {
                     env: [
                       ...Object.keys(secretEnvs).map((key) => {
                         return {
-                          name: secretEnvs[key].name,
+                          name: secretEnvs[key]!.name,
                           valueFrom: {
                             secretKeyRef: {
                               name: createdSecretMapName,
-                              key: secretEnvs[key].value,
+                              key: key,
                             },
                           },
                         }
                       }),
                       ...Object.keys(nonSecretEnvs).map((key) => {
                         return {
-                          name: nonSecretEnvs[key].name,
+                          name: nonSecretEnvs[key]!.name,
                           valueFrom: {
                             secretKeyRef: {
                               name: createdConfigMapName,
-                              key: nonSecretEnvs[key].value,
+                              key: key,
                             },
                           },
                         }
@@ -163,14 +251,16 @@ export class ProjectService {
       fieldManager: K8sService.FIELD_MANAGER,
     })
 
-    await this.k8sService.createIngress({
-      host,
-      ingressName,
-      namespace,
-      serviceName,
-      servicePort,
-      path,
-    })
+    if (visibility == "public") {
+      await this.k8sService.createIngress({
+        host,
+        ingressName,
+        namespace,
+        serviceName,
+        servicePort,
+        path,
+      })
+    }
 
     console.log("Deployment Created: ", deployment)
     console.log("Service Created: ", service)
@@ -192,6 +282,7 @@ export class ProjectService {
     host,
     ingressName,
     servicePort,
+    visibility,
     path,
   }: CreateDeploymentParams &
     CreateSecretMapParams &
@@ -267,22 +358,22 @@ export class ProjectService {
                     env: [
                       ...Object.keys(secretEnvs).map((key) => {
                         return {
-                          name: secretEnvs[key].name,
+                          name: secretEnvs[key]!.name,
                           valueFrom: {
                             secretKeyRef: {
                               name: secretMapName,
-                              key: secretEnvs[key].value,
+                              key: key,
                             },
                           },
                         }
                       }),
                       ...Object.keys(nonSecretEnvs).map((key) => {
                         return {
-                          name: nonSecretEnvs[key].name,
+                          name: nonSecretEnvs[key]!.name,
                           valueFrom: {
                             secretKeyRef: {
                               name: configMapName,
-                              key: nonSecretEnvs[key].value,
+                              key: key,
                             },
                           },
                         }
@@ -315,7 +406,7 @@ export class ProjectService {
             ports: [
               {
                 protocol: "TCP",
-                port: 80,
+                port: servicePort,
                 targetPort: containerPort,
               },
             ],
@@ -325,15 +416,32 @@ export class ProjectService {
         fieldManager: K8sService.FIELD_MANAGER,
       })
 
-    await this.k8sService.createIngress({
-      host,
-      ingressName,
-      namespace,
-      serviceName,
-      servicePort,
-      path,
-    })
+    if (visibility == "public") {
+      const existedIngress = await this.k8sService.getIngress({
+        ingressName,
+        namespace,
+      })
 
+      if (existedIngress.metadata?.name) {
+        await this.k8sService.updateIngress({
+          host,
+          ingressName,
+          namespace,
+          serviceName,
+          servicePort,
+          path,
+        })
+      }
+
+      await this.k8sService.createIngress({
+        host,
+        ingressName,
+        namespace,
+        serviceName,
+        servicePort,
+        path,
+      })
+    }
     console.log("Updated existing deployment:", updatedDeploymentResponse)
     console.log("Updated existing Service:", updatedService)
     return updatedDeploymentResponse
