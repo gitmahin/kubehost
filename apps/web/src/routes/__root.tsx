@@ -7,7 +7,7 @@ import {
 const queryClient = new QueryClient()
 
 import appCss from "@workspace/ui/globals.css?url"
-
+import "react-loading-skeleton/dist/skeleton.css"
 export const Route = createRootRoute({
   head: () => ({
     meta: [

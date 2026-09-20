@@ -72,6 +72,26 @@ export class ProjectRouter implements IRouter {
           )
         )
       )
+
+    this.router
+      .route("/domains")
+      .get(
+        asyncHandler(
+          this.projectController.getAllDomainsHandler.bind(
+            this.projectController
+          )
+        )
+      )
+
+    this.router
+      .route("/:project_name/dash/:deployment_name")
+      .get(
+        asyncHandler(
+          this.projectController.getAllDataForDeploymentDashboard.bind(
+            this.projectController
+          )
+        )
+      )
   }
 
   getRouters(): Router {

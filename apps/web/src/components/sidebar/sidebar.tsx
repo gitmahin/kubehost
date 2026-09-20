@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { projectService } from "@/lib/service"
 import { useQuery } from "@tanstack/react-query"
+import Skeleton from "react-loading-skeleton"
 
 type SidebarLinkType = {
   icon: ComponentType<SVGProps<SVGSVGElement>>
@@ -103,9 +104,23 @@ export const Sidebar = () => {
 
           <CollapsibleContent className="mt-1 ml-5 flex flex-col gap-1 border-l pl-2">
             {isLoading && (
-              <span className="px-3 py-1.5 text-xs text-zinc-500">
-                Loading...
-              </span>
+              <div className="flex flex-col gap-2 px-2">
+                {Array.from({ length: 4 }).map((_, index) => {
+                  const widths = [130, 85, 115, 70]
+                  const currentWidth = widths[index % widths.length]
+
+                  return (
+                    <div key={index} className="flex items-center justify-between w-full h-7">
+                      <Skeleton
+                        width={currentWidth}
+                        height={20}
+                        baseColor="#27272a"
+                        highlightColor="#3f3f46"
+                      />
+                    </div>
+                  )
+                })}
+              </div>
             )}
 
             {!isLoading && projects.length === 0 && (

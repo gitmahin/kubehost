@@ -19,12 +19,15 @@
     "@tanstack/react-router": "latest",
     "@tanstack/react-router-devtools": "latest",
     "@tanstack/react-start": "latest",
+    "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "latest",
     "@workspace/ui": "workspace:*",
     "lucide-react": "^1.47.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.88.0",
+    "react-loading-skeleton": "^3.5.0",
+    "recharts": "^3.10.1",
     "tailwindcss": "^4"
   },
   "devDependencies": {

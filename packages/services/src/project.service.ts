@@ -2,7 +2,7 @@ import { ApiService } from "./api.service"
 import type {
   ApplicationCreateServerInputType,
   ProjectNameInputType,
-  DeleteDeploymentInputType,
+  ProjectAndDeploymentNameInputType,
 } from "@repo/zod"
 
 export class ProjectService extends ApiService {
@@ -26,14 +26,25 @@ export class ProjectService extends ApiService {
     return this.patch("/deployments", payload)
   }
 
-  async getAllDeployments(project: string) {
+  async getAllDeployments(project?: string) {
     return this.get("/deployments", { params: { project } })
+  }
+
+  async getAllDomains() {
+    return this.get("/domains")
   }
 
   async deleteDeployment({
     project_name,
     deployment_name,
-  }: DeleteDeploymentInputType) {
+  }: ProjectAndDeploymentNameInputType) {
     return this.delete(`/${project_name}/deployments/${deployment_name}`)
+  }
+
+  async getDashboard({
+    project_name,
+    deployment_name,
+  }: ProjectAndDeploymentNameInputType) {
+    return this.get(`/${project_name}/dash/${deployment_name}`)
   }
 }

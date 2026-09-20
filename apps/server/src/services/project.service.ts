@@ -10,6 +10,49 @@ import { ApiError } from "@/libs"
 import { getSystemCustomErrorMsgByKey } from "@/events"
 import type { ApplicationCreateInputType } from "@repo/zod"
 
+type DeploymentDashboard = {
+  deployment: {
+    name?: string
+    namespace?: string
+    image?: string
+    containerPort?: number
+    replicas: {
+      desired: number
+      ready: number
+      available: number
+      updated: number
+    }
+    createdAt?: Date
+  }
+
+  service?: {
+    name?: string
+    type?: string
+    clusterIP?: string
+    ports: Array<{
+      port?: number
+      targetPort?: number | string
+      protocol?: string
+    }>
+  }
+
+  ingress: Array<{
+    name?: string
+    host?: string
+    path?: string
+    pathType?: string
+  }>
+
+  pods: Array<{
+    name?: string
+    status?: string
+    podIP?: string
+    nodeName?: string
+    restarts: number
+    createdAt?: Date
+  }>
+}
+
 type CreateDeploymentParams = {
   namespace: string
   deploymentName: string
@@ -82,7 +125,7 @@ export class ProjectService {
       }))
   }
 
-  async getDeployments(namespace: string) {
+  async getDeployments(namespace?: string) {
     const response = namespace
       ? await this.k8sService.appsApi.listNamespacedDeployment({ namespace })
       : await this.k8sService.appsApi.listDeploymentForAllNamespaces()
@@ -561,4 +604,140 @@ export class ProjectService {
       this.k8sService.deleteConfigMap({ namespace, configName }),
     ])
   }
+
+  async getAllDomains() {
+    const response =
+      await this.k8sService.networkingApi.listIngressForAllNamespaces()
+
+    return response.items.flatMap((ingress) =>
+      (ingress.spec?.rules ?? []).map((rule) => ({
+        host: rule.host,
+        namespace: ingress.metadata?.namespace,
+        ingress: ingress.metadata?.name,
+      }))
+    )
+  }
+
+  async getDeploymentDashboard(
+  namespace: string,
+  deploymentName: string,
+): Promise<DeploymentDashboard | null> {
+  const [
+    deploymentResponse,
+    serviceResponse,
+    ingressResponse,
+    podResponse,
+  ] = await Promise.all([
+    this.k8sService.appsApi.readNamespacedDeployment({
+      name: deploymentName,
+      namespace,
+    }),
+
+    this.k8sService.k8sApi.listNamespacedService({
+      namespace,
+    }),
+
+    this.k8sService.networkingApi.listNamespacedIngress({
+      namespace,
+    }),
+
+    this.k8sService.k8sApi.listNamespacedPod({
+      namespace,
+      labelSelector: `app=${deploymentName}`,
+    }),
+  ])
+
+  const deployment = deploymentResponse
+
+  const container =
+    deployment.spec?.template?.spec?.containers?.[0]
+
+  const replicas = {
+    desired: deployment.spec?.replicas ?? 0,
+    ready: deployment.status?.readyReplicas ?? 0,
+    available: deployment.status?.availableReplicas ?? 0,
+    updated: deployment.status?.updatedReplicas ?? 0,
+  }
+
+  // Find Service belonging to this Deployment.
+  const service = serviceResponse.items.find((service) => {
+    const selector = service.spec?.selector
+
+    if (!selector) return false
+
+    return Object.entries(selector).every(
+      ([key, value]) =>
+        deployment.spec?.template?.metadata?.labels?.[key] === value,
+    )
+  })
+
+  // Pods belonging to this Deployment.
+  const pods = podResponse.items.filter((pod) => {
+    const labels = pod.metadata?.labels
+    const deploymentLabels =
+      deployment.spec?.template?.metadata?.labels
+
+    if (!labels || !deploymentLabels) return false
+
+    return Object.entries(deploymentLabels).every(
+      ([key, value]) => labels[key] === value,
+    )
+  })
+
+  // Find Ingress rules that point to this Service.
+  const ingress = ingressResponse.items.flatMap((item) =>
+    (item.spec?.rules ?? []).flatMap((rule) =>
+      (rule.http?.paths ?? [])
+        .filter(
+          (path) =>
+            path.backend.service?.name === service?.metadata?.name,
+        )
+        .map((path) => ({
+          name: item.metadata?.name,
+          host: rule.host,
+          path: path.path,
+          pathType: path.pathType,
+        })),
+    ),
+  )
+
+  return {
+    deployment: {
+      name: deployment.metadata?.name,
+      namespace: deployment.metadata?.namespace,
+      image: container?.image,
+      containerPort: container?.ports?.[0]?.containerPort,
+      replicas,
+      createdAt: deployment.metadata?.creationTimestamp,
+    },
+
+    service: service
+      ? {
+          name: service.metadata?.name,
+          type: service.spec?.type,
+          clusterIP: service.spec?.clusterIP,
+          ports: service.spec?.ports?.map((port) => ({
+            port: port.port,
+            targetPort: port.targetPort,
+            protocol: port.protocol,
+          })) ?? [],
+        }
+      : undefined,
+
+    ingress,
+
+    pods: pods.map((pod) => ({
+      name: pod.metadata?.name,
+      status: pod.status?.phase,
+      podIP: pod.status?.podIP,
+      nodeName: pod.spec?.nodeName,
+      restarts:
+        pod.status?.containerStatuses?.reduce(
+          (total, container) => total + (container.restartCount ?? 0),
+          0,
+        ) ?? 0,
+      createdAt: pod.metadata?.creationTimestamp,
+    })),
+  }
+}
 }

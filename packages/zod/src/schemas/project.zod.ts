@@ -4,12 +4,11 @@ import { ZodBase } from "./base.zod"
 export class ProjectZSchema extends ZodBase {
   static projectName = z
     .string()
-    .min(1, "Project name is required")
     .max(63, "Project name must be 63 characters or fewer")
     .regex(
       /^[a-zA-Z0-9-]+$/,
       "Only letters, numbers, and hyphens are allowed - no spaces or special characters"
-    )
+    ).optional()
 
   static deploymentName = z
     .string()
@@ -83,11 +82,15 @@ export class ProjectZSchema extends ZodBase {
       secretEnvs: this.envMapDataSchema,
       nonSecretEnvs: this.envMapDataSchema,
     })
-    .superRefine(this.hostRequiredForPublic)
+    .superRefine(this.hostRequiredForPublic).required({
+      projectName: true
+    })
 
-  static deleteDeploymentSchema = z.object({
+  static projectAndDeploymentNameSchema = z.object({
     project_name: this.projectName,
     deployment_name: this.deploymentName,
+  }).required({
+    project_name: true
   })
 }
 
@@ -101,6 +104,6 @@ export type ApplicationCreateServerInputType = z.infer<
   typeof ProjectZSchema.applicationDeploymentServerSchema
 >
 
-export type DeleteDeploymentInputType = z.infer<
-  typeof ProjectZSchema.deleteDeploymentSchema
+export type ProjectAndDeploymentNameInputType = z.infer<
+  typeof ProjectZSchema.projectAndDeploymentNameSchema
 >

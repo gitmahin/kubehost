@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router"
 
 import { cn } from "@workspace/ui/lib/utils"
 import { getStatusStyle } from "@/utils/statusStyle"
+import Skeleton from "react-loading-skeleton"
 
 type Deployment = {
     name?: string
@@ -33,9 +34,15 @@ export const ProjectSidebar = ({ project_id, depl_id }: { project_id: string, de
 
             <nav className="flex flex-col gap-1">
                 {isLoading && (
-                    <p className="text-xs text-zinc-500 px-2">Loading...</p>
+                    <div className="flex flex-col gap-2 px-2">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className="flex items-center justify-between w-full h-7">
+                                <Skeleton width={100} height={14} baseColor="#27272a" highlightColor="#3f3f46" />
+                                <Skeleton width={45} height={14} borderRadius={6} baseColor="#27272a" highlightColor="#3f3f46" />
+                            </div>
+                        ))}
+                    </div>
                 )}
-
                 {!isLoading && deployments.length === 0 && (
                     <p className="text-xs text-zinc-500 px-2">No deployments yet</p>
                 )}
