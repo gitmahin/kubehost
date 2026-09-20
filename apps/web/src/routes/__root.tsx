@@ -1,7 +1,15 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
+import { Toaster } from 'sonner';
+
+const queryClient = new QueryClient()
 
 import appCss from "@workspace/ui/globals.css?url"
-
+import "react-loading-skeleton/dist/skeleton.css"
+import { SkeletonTheme } from "react-loading-skeleton";
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -34,12 +42,19 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className={`dark`}>
       <head>
         <HeadContent />
       </head>
       <body className="dark overflow-x-hidden">
-        {children}
+        <QueryClientProvider client={queryClient}>
+   <Toaster richColors={true} position="top-center"  />
+   <SkeletonTheme     baseColor="#27272a"
+                        highlightColor="#3f3f46">
+
+          {children}
+   </SkeletonTheme>
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>

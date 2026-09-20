@@ -2,7 +2,7 @@ import {
   ProjectZSchema,
   type ApplicationCreateInputType,
   type ApplicationCreateServerInputType,
-  type DeleteDeploymentInputType,
+  type ProjectAndDeploymentNameInputType,
   type ProjectNameInputType,
 } from "@/schemas"
 import type z from "zod"
@@ -52,12 +52,12 @@ export class ProjectInputValidators extends Validator {
     return data
   }
 
-  deleteDeploymentInput(
-    payload: DeleteDeploymentInputType
-  ): DeleteDeploymentInputType | z.ZodError {
+  projectAndDeploymentNameInput(
+    payload: ProjectAndDeploymentNameInputType
+  ): ProjectAndDeploymentNameInputType | z.ZodError {
     const { data, success, error } = this.validate(
       payload,
-      ProjectZSchema.deleteDeploymentSchema
+      ProjectZSchema.projectAndDeploymentNameSchema
     )
     if (!success) {
       return error

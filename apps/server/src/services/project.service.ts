@@ -10,6 +10,72 @@ import { ApiError } from "@/libs"
 import { getSystemCustomErrorMsgByKey } from "@/events"
 import type { ApplicationCreateInputType } from "@repo/zod"
 
+type DeploymentDashboard = {
+  deployment: {
+    name?: string
+    namespace?: string
+    image?: string
+    containerPort?: number
+    replicas: {
+      desired: number
+      ready: number
+      available: number
+      updated: number
+    }
+    createdAt?: Date
+  }
+
+  service?: {
+    name?: string
+    type?: string
+    clusterIP?: string
+    ports: Array<{
+      port?: number
+      targetPort?: number | string
+      protocol?: string
+    }>
+  }
+
+  ingress: Array<{
+    name?: string
+    host?: string
+    path?: string
+    pathType?: string
+  }>
+
+  pods: Array<{
+    name?: string
+    status?: string
+    podIP?: string
+    nodeName?: string
+    restarts: number
+    createdAt?: Date
+  }>
+}
+
+export type DeploymentEditData = {
+  deploymentName: string
+  projectName: string
+
+  image: string
+  containerName: string
+  containerPort: number
+  replicas: number
+
+  portBinding: number
+
+  visibility: "private" | "public"
+  host: string
+  path: string
+
+  envVars: {
+    key: string
+    name: string
+    value: string
+    isSecret: boolean
+  }[]
+}
+
 type CreateDeploymentParams = {
   namespace: string
   deploymentName: string
@@ -82,7 +148,7 @@ export class ProjectService {
       }))
   }
 
-  async getDeployments(namespace: string) {
+  async getDeployments(namespace?: string) {
     const response = namespace
       ? await this.k8sService.appsApi.listNamespacedDeployment({ namespace })
       : await this.k8sService.appsApi.listDeploymentForAllNamespaces()
@@ -111,8 +177,24 @@ export class ProjectService {
       return {
         name: deployment.metadata?.name,
         namespace: deployment.metadata?.namespace,
-        image: container?.image,
-        containerPort: container?.ports?.[0]?.containerPort,
+
+        image: {
+          name: container?.image,
+          pullPolicy: container?.imagePullPolicy,
+        },
+
+        container: {
+          name: container?.name,
+          port: container?.ports?.[0]?.containerPort,
+          command: container?.command,
+          args: container?.args,
+          workingDir: container?.workingDir,
+        },
+
+        resources: {
+          requests: container?.resources?.requests,
+          limits: container?.resources?.limits,
+        },
 
         replicas: {
           desired: deployment.spec?.replicas ?? 0,
@@ -120,9 +202,13 @@ export class ProjectService {
           available: deployment.status?.availableReplicas ?? 0,
           updated: deployment.status?.updatedReplicas ?? 0,
         },
+
         status: availableCondition?.status === "True" ? "Running" : "Not Ready",
+
         statusMessage: availableCondition?.message,
+
         createdAt: deployment.metadata?.creationTimestamp,
+
         labels: deployment.metadata?.labels,
       }
     })
@@ -276,7 +362,7 @@ export class ProjectService {
           ports: [
             {
               protocol: "TCP",
-              port: 80,
+              port: servicePort,
               targetPort: containerPort,
             },
           ],
@@ -451,30 +537,30 @@ export class ProjectService {
       })
 
     await this.k8sService.k8sApi.replaceNamespacedService({
-        name: serviceName,
-        namespace,
-        body: {
-          apiVersion: "v1",
-          kind: "Service",
-          metadata: {
-            name: serviceName,
-          },
-          spec: {
-            selector: {
-              app: labelName,
-            },
-            ports: [
-              {
-                protocol: "TCP",
-                port: servicePort,
-                targetPort: containerPort,
-              },
-            ],
-          },
+      name: serviceName,
+      namespace,
+      body: {
+        apiVersion: "v1",
+        kind: "Service",
+        metadata: {
+          name: serviceName,
         },
+        spec: {
+          selector: {
+            app: labelName,
+          },
+          ports: [
+            {
+              protocol: "TCP",
+              port: servicePort,
+              targetPort: containerPort,
+            },
+          ],
+        },
+      },
 
-        fieldManager: K8sService.FIELD_MANAGER,
-      })
+      fieldManager: K8sService.FIELD_MANAGER,
+    })
 
     if (visibility == "public") {
       const existedIngress = await this.k8sService.getIngress({
@@ -501,6 +587,11 @@ export class ProjectService {
           path,
         })
       }
+    } else {
+      await this.k8sService.deleteIngress({
+        ingressName,
+        namespace
+      })
     }
     // console.log("Updated existing deployment:", updatedDeploymentResponse)
     // console.log("Updated existing Service:", updatedService)
@@ -540,5 +631,280 @@ export class ProjectService {
       this.k8sService.deleteSecretMap({ namespace, secretName }),
       this.k8sService.deleteConfigMap({ namespace, configName }),
     ])
+  }
+
+  async getAllDomains() {
+    const response =
+      await this.k8sService.networkingApi.listIngressForAllNamespaces()
+
+    return response.items.flatMap((ingress) =>
+      (ingress.spec?.rules ?? []).map((rule) => ({
+        host: rule.host,
+        namespace: ingress.metadata?.namespace,
+        ingress: ingress.metadata?.name,
+      }))
+    )
+  }
+
+  async getDeploymentDashboard(
+    namespace: string,
+    deploymentName: string
+  ): Promise<DeploymentDashboard | null> {
+    const [deploymentResponse, serviceResponse, ingressResponse, podResponse] =
+      await Promise.all([
+        this.k8sService.appsApi.readNamespacedDeployment({
+          name: deploymentName,
+          namespace,
+        }),
+
+        this.k8sService.k8sApi.listNamespacedService({
+          namespace,
+        }),
+
+        this.k8sService.networkingApi.listNamespacedIngress({
+          namespace,
+        }),
+
+        this.k8sService.k8sApi.listNamespacedPod({
+          namespace,
+          labelSelector: `app=${deploymentName}`,
+        }),
+      ])
+
+    const deployment = deploymentResponse
+
+    const container = deployment.spec?.template?.spec?.containers?.[0]
+
+    const replicas = {
+      desired: deployment.spec?.replicas ?? 0,
+      ready: deployment.status?.readyReplicas ?? 0,
+      available: deployment.status?.availableReplicas ?? 0,
+      updated: deployment.status?.updatedReplicas ?? 0,
+    }
+
+    // Find Service belonging to this Deployment.
+    const service = serviceResponse.items.find((service) => {
+      const selector = service.spec?.selector
+
+      if (!selector) return false
+
+      return Object.entries(selector).every(
+        ([key, value]) =>
+          deployment.spec?.template?.metadata?.labels?.[key] === value
+      )
+    })
+
+    // Pods belonging to this Deployment.
+    const pods = podResponse.items.filter((pod) => {
+      const labels = pod.metadata?.labels
+      const deploymentLabels = deployment.spec?.template?.metadata?.labels
+
+      if (!labels || !deploymentLabels) return false
+
+      return Object.entries(deploymentLabels).every(
+        ([key, value]) => labels[key] === value
+      )
+    })
+
+    // Find Ingress rules that point to this Service.
+    const ingress = ingressResponse.items.flatMap((item) =>
+      (item.spec?.rules ?? []).flatMap((rule) =>
+        (rule.http?.paths ?? [])
+          .filter(
+            (path) => path.backend.service?.name === service?.metadata?.name
+          )
+          .map((path) => ({
+            name: item.metadata?.name,
+            host: rule.host,
+            path: path.path,
+            pathType: path.pathType,
+          }))
+      )
+    )
+
+    return {
+      deployment: {
+        name: deployment.metadata?.name,
+        namespace: deployment.metadata?.namespace,
+        image: container?.image,
+        containerPort: container?.ports?.[0]?.containerPort,
+        replicas,
+        createdAt: deployment.metadata?.creationTimestamp,
+      },
+
+      service: service
+        ? {
+            name: service.metadata?.name,
+            type: service.spec?.type,
+            clusterIP: service.spec?.clusterIP,
+            ports:
+              service.spec?.ports?.map((port) => ({
+                port: port.port,
+                targetPort: port.targetPort,
+                protocol: port.protocol,
+              })) ?? [],
+          }
+        : undefined,
+
+      ingress,
+
+      pods: pods.map((pod) => ({
+        name: pod.metadata?.name,
+        status: pod.status?.phase,
+        podIP: pod.status?.podIP,
+        nodeName: pod.spec?.nodeName,
+        restarts:
+          pod.status?.containerStatuses?.reduce(
+            (total, container) => total + (container.restartCount ?? 0),
+            0
+          ) ?? 0,
+        createdAt: pod.metadata?.creationTimestamp,
+      })),
+    }
+  }
+
+  async getDeploymentEditData(
+    namespace: string,
+    deploymentName: string
+  ): Promise<DeploymentEditData> {
+    const [deployment, services, ingresses] = await Promise.all([
+      this.k8sService.appsApi.readNamespacedDeployment({
+        name: deploymentName,
+        namespace,
+      }),
+
+      this.k8sService.k8sApi.listNamespacedService({
+        namespace,
+      }),
+
+      this.k8sService.networkingApi.listNamespacedIngress({
+        namespace,
+      }),
+    ])
+
+    const container = deployment.spec?.template?.spec?.containers?.[0]
+
+    if (!container) {
+      throw new Error(`No container found in deployment "${deploymentName}"`)
+    }
+
+    // Service
+    const deploymentLabels = deployment.spec?.template?.metadata?.labels ?? {}
+
+    const service = services.items.find((service) => {
+      const selector = service.spec?.selector
+
+      if (!selector) return false
+
+      return Object.entries(selector).every(
+        ([key, value]) => deploymentLabels[key] === value
+      )
+    })
+
+    // Ingress
+    let host = ""
+    let path = "/"
+    let visibility: "private" | "public" = "private"
+
+    if (service) {
+      for (const ingress of ingresses.items) {
+        for (const rule of ingress.spec?.rules ?? []) {
+          for (const ingressPath of rule.http?.paths ?? []) {
+            if (ingressPath.backend.service?.name === service.metadata?.name) {
+              visibility = "public"
+              host = rule.host ?? ""
+
+              const ingressPathValue = ingressPath.path ?? "/"
+
+              path =
+                ingressPathValue.includes("(.*)") ||
+                ingressPathValue.includes(".*")
+                  ? "/"
+                  : ingressPathValue
+
+              break
+            }
+          }
+        }
+      }
+    }
+
+    // Environment variables
+    const envVars = await Promise.all(
+      (container.env ?? []).map(async (env) => {
+        // Direct value
+        if (env.value !== undefined) {
+          return {
+            key: env.name ?? "",
+            name: env.name ?? "",
+            value: env.value,
+            isSecret: false,
+          }
+        }
+
+        // Secret
+        if (env.valueFrom?.secretKeyRef) {
+          const secretRef = env.valueFrom.secretKeyRef
+
+          const secret = await this.k8sService.k8sApi.readNamespacedSecret({
+            name: secretRef.name!,
+            namespace,
+          })
+
+          const encodedValue = secret.data?.[secretRef.key!]
+
+          return {
+            key: secretRef.key ?? "",
+            name: env.name ?? "",
+            value: encodedValue
+              ? Buffer.from(encodedValue, "base64").toString("utf8")
+              : "",
+            isSecret: true,
+          }
+        }
+
+        // ConfigMap
+        if (env.valueFrom?.configMapKeyRef) {
+          const configMapRef = env.valueFrom.configMapKeyRef
+
+          const configMap =
+            await this.k8sService.k8sApi.readNamespacedConfigMap({
+              name: configMapRef.name!,
+              namespace,
+            })
+
+          return {
+            key: configMapRef.key ?? "",
+            name: env.name ?? "",
+            value: configMap.data?.[configMapRef.key!] ?? "",
+            isSecret: false,
+          }
+        }
+
+        return {
+          key: env.name ?? "",
+          name: env.name ?? "",
+          value: "",
+          isSecret: false,
+        }
+      })
+    )
+
+    // Service port
+    const portBinding = service?.spec?.ports?.[0]?.port ?? 80
+
+    return {
+      deploymentName: deployment.metadata?.name ?? deploymentName,
+      projectName: namespace,
+      image: container.image ?? "",
+      containerName: container.name ?? "",
+      containerPort: container.ports?.[0]?.containerPort ?? 3000,
+      replicas: deployment.spec?.replicas ?? 1,
+      portBinding,
+      visibility,
+      host,
+      path,
+      envVars,
+    }
   }
 }

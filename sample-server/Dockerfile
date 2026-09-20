@@ -3,7 +3,7 @@ FROM node:24-alpine AS base
 
 WORKDIR /app
 COPY package.json .
-RUN corepack enable pnpm && pnpm install
+RUN npm install
 
 FROM base AS builder
 
