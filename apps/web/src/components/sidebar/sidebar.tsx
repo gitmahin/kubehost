@@ -22,6 +22,8 @@ import {
   LayoutGrid,
   Database,
 } from "lucide-react"
+import { projectService } from "@/lib/service"
+import { useQuery } from "@tanstack/react-query"
 
 type SidebarLinkType = {
   icon: ComponentType<SVGProps<SVGSVGElement>>
@@ -51,16 +53,25 @@ const SidebarLinks: SidebarLinkType[] = [
 const APP_VERSION = "v1.0.0"
 
 const linkClass = (isActive: boolean) =>
-  `flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors ${
-    isActive
-      ? "bg-zinc-800 text-zinc-50 font-medium"
-      : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-50"
+  `flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors ${isActive
+    ? "bg-zinc-800 text-zinc-50 font-medium"
+    : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-50"
   }`
 
 export const Sidebar = () => {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
+
+
+  const { data: projects = [], isLoading } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      const res: any = await projectService.listAllProjects()
+      return (res?.data.data ?? []) as Project[]
+    },
+  })
+
 
   const isProjectsSectionActive = pathname.startsWith("/projects")
   const [projectsOpen, setProjectsOpen] = useState(isProjectsSectionActive)
@@ -85,21 +96,32 @@ export const Sidebar = () => {
               Projects
             </span>
             <ChevronDown
-              className={`h-4 w-4 shrink-0 transition-transform ${
-                projectsOpen ? "rotate-180" : ""
-              }`}
+              className={`h-4 w-4 shrink-0 transition-transform ${projectsOpen ? "rotate-180" : ""
+                }`}
             />
           </CollapsibleTrigger>
 
           <CollapsibleContent className="mt-1 ml-5 flex flex-col gap-1 border-l pl-2">
+            {isLoading && (
+              <span className="px-3 py-1.5 text-xs text-zinc-500">
+                Loading...
+              </span>
+            )}
+
+            {!isLoading && projects.length === 0 && (
+              <span className="px-3 py-1.5 text-xs text-zinc-500">
+                No projects yet
+              </span>
+            )}
+
             {projects.map((project) => {
-              const slug = `/projects/${project.id}`
+              const slug = `/projects/${project.name}` as LinkProps["to"]
               const isActive = pathname === slug
               return (
                 <Link
-                  key={project.id}
+                  key={project.name}
                   to={slug}
-                  className={`${linkClass(isActive)} `}
+                  className={linkClass(isActive)}
                 >
                   <span className="truncate">{project.name}</span>
                 </Link>

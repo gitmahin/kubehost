@@ -1,4 +1,10 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
 
 import appCss from "@workspace/ui/globals.css?url"
 
@@ -39,7 +45,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="dark overflow-x-hidden">
-        {children}
+        <QueryClientProvider client={queryClient}>
+
+          {children}
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>
