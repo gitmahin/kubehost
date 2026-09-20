@@ -48,8 +48,8 @@ export const ProjectSidebar = ({ project_id, depl_id }: { project_id: string, de
                     <div className="flex flex-col gap-2 px-2">
                         {Array.from({ length: 4 }).map((_, index) => (
                             <div key={index} className="flex items-center justify-between w-full h-7">
-                                <Skeleton width={100} height={14} baseColor="#27272a" highlightColor="#3f3f46" />
-                                <Skeleton width={45} height={14} borderRadius={6} baseColor="#27272a" highlightColor="#3f3f46" />
+                                <Skeleton width={100} height={14}  />
+                                <Skeleton width={45} height={14} borderRadius={6}  />
                             </div>
                         ))}
                     </div>

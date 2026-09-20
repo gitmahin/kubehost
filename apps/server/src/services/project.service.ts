@@ -782,6 +782,7 @@ export class ProjectService {
     if (!container) {
       throw new Error(`No container found in deployment "${deploymentName}"`)
     }
+
     // Service
     const deploymentLabels = deployment.spec?.template?.metadata?.labels ?? {}
 
@@ -795,7 +796,7 @@ export class ProjectService {
       )
     })
 
-    // ingress
+    // Ingress
     let host = ""
     let path = "/"
     let visibility: "private" | "public" = "private"
@@ -807,7 +808,14 @@ export class ProjectService {
             if (ingressPath.backend.service?.name === service.metadata?.name) {
               visibility = "public"
               host = rule.host ?? ""
-              path = ingressPath.path ?? "/"
+
+              const ingressPathValue = ingressPath.path ?? "/"
+
+              path =
+                ingressPathValue.includes("(.*)") ||
+                ingressPathValue.includes(".*")
+                  ? "/"
+                  : ingressPathValue
 
               break
             }
@@ -816,8 +824,7 @@ export class ProjectService {
       }
     }
 
-    // enviornment variables
-
+    // Environment variables
     const envVars = await Promise.all(
       (container.env ?? []).map(async (env) => {
         // Direct value
@@ -877,31 +884,21 @@ export class ProjectService {
         }
       })
     )
-    // service port
 
+    // Service port
     const portBinding = service?.spec?.ports?.[0]?.port ?? 80
 
     return {
       deploymentName: deployment.metadata?.name ?? deploymentName,
-
       projectName: namespace,
-
       image: container.image ?? "",
-
       containerName: container.name ?? "",
-
       containerPort: container.ports?.[0]?.containerPort ?? 3000,
-
       replicas: deployment.spec?.replicas ?? 1,
-
       portBinding,
-
       visibility,
-
       host,
-
       path,
-
       envVars,
     }
   }

@@ -114,8 +114,7 @@ export const Sidebar = () => {
                       <Skeleton
                         width={currentWidth}
                         height={20}
-                        baseColor="#27272a"
-                        highlightColor="#3f3f46"
+            
                       />
                     </div>
                   )

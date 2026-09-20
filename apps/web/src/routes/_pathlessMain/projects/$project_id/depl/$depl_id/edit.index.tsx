@@ -32,6 +32,7 @@ import type {
 } from "@repo/zod"
 import { EnvVarRow } from "@/components/deployments"
 import { projectService } from "@/lib/service"
+import { EditFormLoader } from "@/components/skeleton"
 
 export const Route = createFileRoute(
     "/_pathlessMain/projects/$project_id/depl/$depl_id/edit/",
@@ -188,12 +189,7 @@ function RouteComponent() {
     }
 
     if (isLoading) {
-        return (
-            <div className="flex h-64 w-full items-center justify-center gap-2">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                <span className="text-muted-foreground">Loading deployment configuration...</span>
-            </div>
-        )
+        return <EditFormLoader />
     }
 
     if (isError) {
