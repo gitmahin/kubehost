@@ -1,3 +1,5 @@
+import "dotenv/config"
+import { baseConfig } from "@/config"
 import { getSystemCustomErrorMsgByKey } from "@/events"
 import { ApiError } from "@/libs"
 import * as k8s from "@kubernetes/client-node"
@@ -53,7 +55,29 @@ export class K8sService {
   public static FIELD_MANAGER: string = "kubehost"
   constructor() {
     this.kc = new k8s.KubeConfig()
-    this.kc.loadFromDefault()
+
+    if (baseConfig.NODE_ENV !== "production") {
+      this.kc.loadFromDefault()
+    } else {
+      this.kc.loadFromOptions({
+        clusters: [
+          {
+            name: "minikube",
+            server: process.env.K8S_SERVER,
+            skipTLSVerify: true,
+          },
+        ],
+        users: [
+          {
+            name: "kubehost-sa",
+            token: process.env.K8S_TOKEN,
+          },
+        ],
+        contexts: [{ name: "ctx", cluster: "minikube", user: "kubehost-sa" }],
+        currentContext: "ctx",
+      })
+    }
+
     this.k8sApi = this.kc.makeApiClient(k8s.CoreV1Api)
     this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api)
     this.networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api)

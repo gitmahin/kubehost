@@ -1,3 +1,6 @@
 docker build -t dockermahin/kubehost-server:latest -f ./apps/server/Dockerfile .
-docker build -t dockermahin/kubehost-client:latest -f ./apps/web/Dockerfile .
+
+docker build \
+  --build-arg VITE_API_SERVER_URL=http://localhost:3000/api \
+  -t dockermahin/kubehost-client:latest -f ./apps/web/Dockerfile .
 

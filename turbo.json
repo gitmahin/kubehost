@@ -1,11 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["VITE_API_SERVER_URL"],
   "ui": "tui",
   "tasks": {
-    "build": {
+   "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".output/**"]
+      "outputs": [".output/**", "dist/**"],
+      "inputs": ["$VITE_API_SERVER_URL"]
     },
     "lint": {
       "dependsOn": ["^lint"]

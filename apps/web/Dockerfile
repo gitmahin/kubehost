@@ -48,6 +48,11 @@ ENV TURBO_TELEMETRY_DISABLED=1
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+ARG VITE_API_SERVER_URL
+ENV VITE_API_SERVER_URL=${VITE_API_SERVER_URL}
+
+RUN echo "VITE_API_SERVER_URL=$VITE_API_SERVER_URL"
+
 # Build the main app
 RUN if [ -f package-lock.json ]; then \
     npm turbo run build; \
