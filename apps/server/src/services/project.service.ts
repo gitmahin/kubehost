@@ -425,7 +425,7 @@ export class ProjectService {
                         return {
                           name: nonSecretEnvs[key]!.name,
                           valueFrom: {
-                            secretKeyRef: {
+                            configMapKeyRef: {
                               name: configMapName,
                               key: key,
                             },
@@ -485,16 +485,16 @@ export class ProjectService {
           servicePort,
           path,
         })
+      } else {
+        await this.k8sService.createIngress({
+          host,
+          ingressName,
+          namespace,
+          serviceName,
+          servicePort,
+          path,
+        })
       }
-
-      await this.k8sService.createIngress({
-        host,
-        ingressName,
-        namespace,
-        serviceName,
-        servicePort,
-        path,
-      })
     }
     console.log("Updated existing deployment:", updatedDeploymentResponse)
     console.log("Updated existing Service:", updatedService)
