@@ -818,14 +818,65 @@ export class ProjectService {
 
     // enviornment variables
 
-    const envVars =
-      container.env?.map((env) => ({
-        key: env.name ?? "",
-        name: env.name ?? "",
-        value: env.value ?? "",
-        isSecret: !!env.valueFrom?.secretKeyRef,
-      })) ?? []
+    const envVars = await Promise.all(
+      (container.env ?? []).map(async (env) => {
+        // Direct value
+        if (env.value !== undefined) {
+          return {
+            key: env.name ?? "",
+            name: env.name ?? "",
+            value: env.value,
+            isSecret: false,
+          }
+        }
 
+        // Secret
+        if (env.valueFrom?.secretKeyRef) {
+          const secretRef = env.valueFrom.secretKeyRef
+
+          const secret = await this.k8sService.k8sApi.readNamespacedSecret({
+            name: secretRef.name!,
+            namespace,
+          })
+
+          const encodedValue = secret.data?.[secretRef.key!]
+
+          return {
+            key: secretRef.key ?? "",
+            name: env.name ?? "",
+            value: encodedValue
+              ? Buffer.from(encodedValue, "base64").toString("utf8")
+              : "",
+            isSecret: true,
+          }
+        }
+
+        // ConfigMap
+        if (env.valueFrom?.configMapKeyRef) {
+          const configMapRef = env.valueFrom.configMapKeyRef
+
+          const configMap =
+            await this.k8sService.k8sApi.readNamespacedConfigMap({
+              name: configMapRef.name!,
+              namespace,
+            })
+
+          return {
+            key: configMapRef.key ?? "",
+            name: env.name ?? "",
+            value: configMap.data?.[configMapRef.key!] ?? "",
+            isSecret: false,
+          }
+        }
+
+        return {
+          key: env.name ?? "",
+          name: env.name ?? "",
+          value: "",
+          isSecret: false,
+        }
+      })
+    )
     // service port
 
     const portBinding = service?.spec?.ports?.[0]?.port ?? 80
