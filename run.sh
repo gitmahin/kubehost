@@ -1,0 +1,2 @@
+docker run -p 3000:3000 --name kubehost-server --network minikube dockermahin/kubehost-server:latest 
+docker run -p 3001:3000 --name kubehost-client --network minikube -e  dockermahin/kubehost-client:latest 

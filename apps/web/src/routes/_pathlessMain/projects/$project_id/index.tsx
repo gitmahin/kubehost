@@ -101,47 +101,7 @@ function RouteComponent() {
         </CardContent>
       </Card>
 
-      {/* Value Propositions / Managed Features */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <Layers className="mb-2 h-5 w-5 text-primary" />
-            <CardTitle className="text-base font-semibold">
-              Kubernetes Powered
-            </CardTitle>
-            <CardDescription>
-              Built on enterprise Kubernetes without requiring YAML manifests,
-              kubectl commands, or cluster tuning.
-            </CardDescription>
-          </CardHeader>
-        </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <Cpu className="mb-2 h-5 w-5 text-primary" />
-            <CardTitle className="text-base font-semibold">
-              Automated Networking
-            </CardTitle>
-            <CardDescription>
-              Load balancing, ingress routes, and SSL certificates are
-              provisioned and configured automatically.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <ShieldCheck className="mb-2 h-5 w-5 text-primary" />
-            <CardTitle className="text-base font-semibold">
-              Zero-Config Docker
-            </CardTitle>
-            <CardDescription>
-              Pass your image URI from Docker Hub or standard registries and hit
-              deploy-we handle the rest.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
     </div>
   )
 }

@@ -7,6 +7,7 @@
     "dev": "vite dev --port 3000",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "node .output/server/index.mjs",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
@@ -25,6 +26,7 @@
     "lucide-react": "^1.47.0",
     "mobx": "^7.0.3",
     "mobx-react": "^10.0.2",
+    "nitro": "3.0.260903-beta",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.88.0",

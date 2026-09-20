@@ -9,7 +9,7 @@ WORKDIR /app
 
 RUN npm install -g turbo
 COPY . .
-RUN turbo prune server --docker
+RUN turbo prune web --docker
 
 # ******************************INSTALLATION**************************************
 FROM base AS installer
@@ -67,20 +67,20 @@ ENV TURBO_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 express
-USER express
+RUN addgroup --system --gid 1001 react
+RUN adduser --system --uid 1001 tanstack
+USER tanstack
 
-COPY --from=builder --chown=express:nodejs  /app/apps/server/package*.json ./apps/server/
-# copy server node_modules
-COPY --from=builder --chown=express:nodejs /app/apps/server/node_modules ./apps/server/node_modules/
+COPY --from=builder --chown=tanstack:react  /app/apps/web/package*.json ./apps/web/
+# copy web node_modules
+COPY --from=builder --chown=tanstack:react /app/apps/web/node_modules ./apps/web/node_modules/
 # copry root node_modules
-COPY --from=builder --chown=express:nodejs /app/node_modules ./node_modules/
-COPY --from=builder --chown=express:nodejs /app/apps/server/dist ./apps/server/dist/
-COPY --from=builder --chown=express:nodejs /app/packages/ ./packages/
+COPY --from=builder --chown=tanstack:react /app/node_modules ./node_modules/
+COPY --from=builder --chown=tanstack:react /app/apps/web/.output ./apps/web/.output/
+COPY --from=builder --chown=tanstack:react /app/packages/ ./packages/
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD [ "node", "apps/server/dist/index.mjs" ]
+CMD [ "node", "apps/web/.output/server/index.mjs" ]
