@@ -362,7 +362,7 @@ export class ProjectService {
           ports: [
             {
               protocol: "TCP",
-              port: 80,
+              port: servicePort,
               targetPort: containerPort,
             },
           ],
@@ -587,6 +587,11 @@ export class ProjectService {
           path,
         })
       }
+    } else {
+      await this.k8sService.deleteIngress({
+        ingressName,
+        namespace
+      })
     }
     // console.log("Updated existing deployment:", updatedDeploymentResponse)
     // console.log("Updated existing Service:", updatedService)

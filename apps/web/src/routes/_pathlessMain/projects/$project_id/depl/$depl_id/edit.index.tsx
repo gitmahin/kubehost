@@ -81,7 +81,7 @@ function RouteComponent() {
             deploymentName: "",
             image: "",
             containerName: "",
-            containerPort: 8080,
+            containerPort: 3000,
             portBinding: 80,
             replicas: 1,
             envVars: [],
@@ -98,7 +98,7 @@ function RouteComponent() {
                 deploymentName: deploymentData.deploymentName ?? "",
                 image: deploymentData.image ?? "",
                 containerName: deploymentData.containerName ?? "",
-                containerPort: deploymentData.containerPort ?? 8080,
+                containerPort: deploymentData.containerPort ?? 3000,
                 portBinding: deploymentData.portBinding ?? 80,
                 replicas: deploymentData.replicas ?? 1,
                 envVars: deploymentData.envVars ?? [],
@@ -268,7 +268,7 @@ function RouteComponent() {
                                     <Input
                                         id="container-port"
                                         type="number"
-                                        placeholder="8080"
+                                        placeholder="3000"
                                         aria-invalid={!!errors.containerPort}
                                         disabled={updateDeploymentMutation.isPending}
                                         onKeyDown={(e) => {
@@ -287,8 +287,9 @@ function RouteComponent() {
                                         id="port-binding"
                                         type="number"
                                         placeholder="80"
+                                       
                                         aria-invalid={!!errors.portBinding}
-                                        disabled={updateDeploymentMutation.isPending}
+                                        disabled={updateDeploymentMutation.isPending || visibility == "public"}
                                         onKeyDown={(e) => {
                                             if (e.key === "-" || e.key === "e") e.preventDefault()
                                         }}

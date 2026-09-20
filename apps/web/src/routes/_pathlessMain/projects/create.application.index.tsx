@@ -66,7 +66,7 @@ function RouteComponent() {
       deploymentName: "",
       image: "",
       containerName: "",
-      containerPort: 8080,
+      containerPort: 3000,
       portBinding: 80,
       replicas: 1,
       envVars: [],
@@ -219,7 +219,7 @@ function RouteComponent() {
                   <Input
                     id="container-port"
                     type="number"
-                    placeholder="8080"
+                    placeholder="3000"
                     aria-invalid={!!errors.containerPort}
                     disabled={createDeploymentMutation.isPending}
                     onKeyDown={(e) => {
@@ -238,8 +238,9 @@ function RouteComponent() {
                     id="port-binding"
                     type="number"
                     placeholder="80"
+                    defaultValue={80}
                     aria-invalid={!!errors.portBinding}
-                    disabled={createDeploymentMutation.isPending}
+                    disabled={createDeploymentMutation.isPending || visibility == "public"}
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e") e.preventDefault()
                     }}

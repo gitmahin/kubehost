@@ -32,7 +32,7 @@ export const ProjectSidebar = ({ project_id, depl_id }: { project_id: string, de
     console.log(deployments)
 
     return (
-        <aside className="w-[250px] h-[calc(100vh-55px)] sticky top-0 bg-zinc-900/30 border-r px-3 py-6">
+        <aside className="w-[250px] h-[calc(100vh-55px)] sticky top-[55px] bg-zinc-900/30 border-r px-3 py-6">
             <Button className={"w-full justify-start "} onClick={() => {
                 navigate({
                     to: "/projects/create/application",
