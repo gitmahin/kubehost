@@ -18,7 +18,7 @@ type AddNewOption = {
 
 const addNewOptions: AddNewOption[] = [
   { icon: FolderClosed, label: "Project", slug: "/projects/create" },
-  { icon: Database, label: "Storage", slug: "/storage/create" },
+  // { icon: Database, label: "Storage", slug: "/storage/create" },
 ]
 
 export const Header = () => {

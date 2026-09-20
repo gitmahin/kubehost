@@ -37,17 +37,10 @@ type Project = {
   name: string
 }
 
-// TODO: replace with real data (query hook, loader data, etc.)
-const projects: Project[] = [
-  { id: "proj_1", name: "storefront-api" },
-  { id: "proj_2", name: "auth-service" },
-  { id: "proj_3", name: "analytics-worker" },
-]
-
 const SidebarLinks: SidebarLinkType[] = [
   { icon: Globe, label: "Domains", slug: "/domains" },
   { icon: Box, label: "Deployments", slug: "/deployments" },
-  { icon: Database, label: "Storage", slug: "/storage" },
+  // { icon: Database, label: "Storage", slug: "/storage" },
   { icon: Docker, label: "Images", slug: "/images" },
 ]
 

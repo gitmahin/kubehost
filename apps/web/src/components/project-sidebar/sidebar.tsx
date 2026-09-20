@@ -29,7 +29,7 @@ export const ProjectSidebar = ({ project_id, depl_id }: { project_id: string, de
         refetchIntervalInBackground: true,
     })
 
-    console.log(deployments)
+    // console.log(deployments)
 
     return (
         <aside className="w-[250px] h-[calc(100vh-55px)] sticky top-[55px] bg-zinc-900/30 border-r px-3 py-6">

@@ -26,6 +26,7 @@ import {
 import { Badge } from "@workspace/ui/components/badge"
 import { cn } from "@workspace/ui/lib/utils"
 import { projectService } from "@/lib/service"
+import { EmptyDeployment } from "@/components/deployments/EmptyView"
 
 type DeploymentsSearch = {
   project?: string
@@ -217,6 +218,10 @@ function RouteComponent() {
   }
 
   const isTableLoading = isLoading || isFetching
+
+  if(deployments.length === 0) {
+    return <EmptyDeployment/>
+  }
 
   return (
     <div className="w-full p-6 flex flex-col gap-4">

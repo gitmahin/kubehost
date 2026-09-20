@@ -61,7 +61,7 @@ export class K8sService {
 
   async listAllPods(namespace: string) {
     const res = await this.k8sApi.listNamespacedPod({ namespace: namespace })
-    console.log(res)
+    // console.log(res)
     return res
   }
 
