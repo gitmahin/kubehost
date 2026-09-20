@@ -16,7 +16,7 @@ export class ProjectRouter implements IRouter {
 
   createRouters(): void {
     this.router
-      .route("/namespaces")
+      .route("/")
       .post(
         asyncHandler(
           this.projectController.createProjectHandler.bind(
@@ -56,7 +56,7 @@ export class ProjectRouter implements IRouter {
       )
 
       this.router
-      .route("/namespaces")
+      .route("/")
       .get(
         asyncHandler(
           this.projectController.getPorjectsHandler.bind(

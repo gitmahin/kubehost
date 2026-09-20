@@ -24,7 +24,7 @@ export class ProjectController {
       this.projectInputValidators.projectNameInput(project_name)
     if (isZodError(parsedProjectName)) throw validationError(parsedProjectName)
 
-    this.projectService.createNewProject(parsedProjectName)
+    await this.projectService.createNewProject(parsedProjectName)
     return res.status(200).json(new ApiResponse(200, "Ok"))
   }
 
@@ -50,7 +50,7 @@ export class ProjectController {
       secretEnvs,
     } = parsedPayload
 
-    this.projectService.createDeployment({
+   await  this.projectService.createDeployment({
       namespace: projectName,
       deploymentName: deploymentName,
       containerName: containerName,
@@ -95,7 +95,7 @@ export class ProjectController {
       projectName,
     } = parsedPayload
 
-    this.projectService.updateDeployment({
+    await this.projectService.updateDeployment({
       namespace: projectName,
       deploymentName: deploymentName,
       containerName: containerName,

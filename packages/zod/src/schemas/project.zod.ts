@@ -35,49 +35,55 @@ export class ProjectZSchema extends ZodBase {
     })
   )
 
-  static applicationSchema = z
-    .object({
-      image: z.string().min(1, "Image is required"),
-      containerName: z.string().min(1, "Container name is required"),
-      containerPort: z.coerce
-        .number({ error: "Container port must be a number" })
-        .int()
-        .min(0, "Port cannot be negative")
-        .max(65535, "Port must be 65535 or below"),
-      portBinding: z.coerce
-        .number({ error: "Port binding must be a number" })
-        .int()
-        .min(0, "Port cannot be negative")
-        .max(65535, "Port must be 65535 or below"),
-      replicas: z.coerce
-        .number({ error: "Replicas must be a number" })
-        .int()
-        .min(1, "At least 1 replica is required"),
-      envVars: z.array(this.envVarSchema),
-      visibility: z.enum(["public", "private"]),
-      host: z.string().optional(),
-      path: z.string().optional(),
-    })
-    .superRefine((data, ctx) => {
-      if (data.visibility === "public" && !data.host) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Host is required for public deployments",
-          path: ["host"],
-        })
-      }
-    })
-
-  static applicationDeploymentServerSchema = this.applicationSchema.extend({
-    projectName: this.projectName,
-    deploymentName: this.deploymentName,
-    secretEnvs: this.envMapDataSchema,
-    nonSecretEnvs: this.envMapDataSchema,
-  }).omit({
-    envVars: true
+  static applicationBaseSchema = z.object({
+    image: z.string().min(1, "Image is required"),
+    containerName: z.string().min(1, "Container name is required"),
+    containerPort: z.coerce
+      .number({ error: "Container port must be a number" })
+      .int()
+      .min(0, "Port cannot be negative")
+      .max(65535, "Port must be 65535 or below"),
+    portBinding: z.coerce
+      .number({ error: "Port binding must be a number" })
+      .int()
+      .min(0, "Port cannot be negative")
+      .max(65535, "Port must be 65535 or below"),
+    replicas: z.coerce
+      .number({ error: "Replicas must be a number" })
+      .int()
+      .min(1, "At least 1 replica is required"),
+    envVars: z.array(this.envVarSchema),
+    visibility: z.enum(["public", "private"]),
+    host: z.string().optional(),
+    path: z.string().optional(),
   })
 
+  static hostRequiredForPublic(
+    data: { visibility: string; host?: string },
+    ctx: z.RefinementCtx
+  ) {
+    if (data.visibility === "public" && !data.host) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Host is required for public deployments",
+        path: ["host"],
+      })
+    }
+  }
 
+  static applicationSchema = this.applicationBaseSchema.superRefine(
+    this.hostRequiredForPublic
+  )
+
+  static applicationDeploymentServerSchema = this.applicationBaseSchema
+    .omit({ envVars: true })
+    .extend({
+      projectName: this.projectName,
+      deploymentName: this.deploymentName,
+      secretEnvs: this.envMapDataSchema,
+      nonSecretEnvs: this.envMapDataSchema,
+    })
+    .superRefine(this.hostRequiredForPublic)
 }
 
 export type ProjectNameInputType = z.infer<typeof ProjectZSchema.projectName>
@@ -85,7 +91,6 @@ export type ProjectNameInputType = z.infer<typeof ProjectZSchema.projectName>
 export type ApplicationCreateInputType = z.infer<
   typeof ProjectZSchema.applicationSchema
 >
-
 
 export type ApplicationCreateServerInputType = z.infer<
   typeof ProjectZSchema.applicationDeploymentServerSchema

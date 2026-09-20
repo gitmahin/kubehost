@@ -32,15 +32,19 @@ export class ProjectService {
     private k8sService: K8sService
   ) {}
   async createNewProject(projectName: string) {
-    const existedNamespace = await this.k8sService.k8sApi.readNamespace({
-      name: projectName,
-    })
-    if (existedNamespace.metadata?.name) {
+    try {
+      await this.k8sService.k8sApi.readNamespace({ name: projectName })
+
       throw new ApiError(
-        400,
+        409,
         getSystemCustomErrorMsgByKey("NAMESPACE_ALREADY_EXISTS")
       )
+    } catch (err: any) {
+      if (err?.code !== 404) {
+        throw err
+      }
     }
+
     const response = await this.k8sService.k8sApi.createNamespace({
       body: {
         metadata: {
@@ -138,30 +142,54 @@ export class ProjectService {
     CreateSecretMapParams &
     CreateConfigMapParams &
     CreateIngressParams) {
-    const existedDeployment =
+    try {
       await this.k8sService.appsApi.readNamespacedDeployment({
         name: deploymentName,
         namespace,
       })
 
-    if (existedDeployment.metadata?.name) {
       throw new ApiError(
-        400,
+        409,
         getSystemCustomErrorMsgByKey("DEPLOYMENT_ALREADY_EXISTS")
       )
+    } catch (err: any) {
+      if (err?.code !== 404) {
+        throw err
+      }
+    }
+    let createdSecretMapName: string
+    let createdConfigMapName: string
+    try {
+      createdSecretMapName = await this.k8sService.createSecretMap({
+        namespace,
+        secretEnvs,
+        secretName,
+      })
+    } catch (error) {
+      const update = await this.k8sService.updateSecretMap({
+        namespace,
+        secretEnvs,
+        secretName,
+      })
+
+      createdSecretMapName = update.metadata?.name as string
     }
 
-    const createdSecretMapName = await this.k8sService.createSecretMap({
-      namespace,
-      secretEnvs,
-      secretName,
-    })
+    try {
+      createdConfigMapName = await this.k8sService.createConfigMap({
+        namespace,
+        nonSecretEnvs,
+        configName,
+      })
+    } catch (error) {
+      const update = await this.k8sService.updateConfigMap({
+        namespace,
+        nonSecretEnvs,
+        configName,
+      })
 
-    const createdConfigMapName = await this.k8sService.createConfigMap({
-      namespace,
-      nonSecretEnvs,
-      configName,
-    })
+      createdConfigMapName = update.metadata?.name as string
+    }
 
     const deployment = await this.k8sService.appsApi.createNamespacedDeployment(
       {
@@ -207,7 +235,7 @@ export class ProjectService {
                         return {
                           name: nonSecretEnvs[key]!.name,
                           valueFrom: {
-                            secretKeyRef: {
+                            configMapKeyRef: {
                               name: createdConfigMapName,
                               key: key,
                             },
@@ -252,14 +280,25 @@ export class ProjectService {
     })
 
     if (visibility == "public") {
-      await this.k8sService.createIngress({
-        host,
-        ingressName,
-        namespace,
-        serviceName,
-        servicePort,
-        path,
-      })
+      try {
+        await this.k8sService.createIngress({
+          host,
+          ingressName,
+          namespace,
+          serviceName,
+          servicePort,
+          path,
+        })
+      } catch (error) {
+        await this.k8sService.updateIngress({
+          host,
+          ingressName,
+          namespace,
+          serviceName,
+          servicePort,
+          path,
+        })
+      }
     }
 
     console.log("Deployment Created: ", deployment)
@@ -289,6 +328,21 @@ export class ProjectService {
     CreateServiceParams &
     CreateConfigMapParams &
     CreateIngressParams) {
+    try {
+      await this.k8sService.appsApi.readNamespacedDeployment({
+        name: deploymentName,
+        namespace,
+      })
+    } catch (err: any) {
+      if (err?.code === 404) {
+        throw new ApiError(
+          404,
+          getSystemCustomErrorMsgByKey("DEPLOYMENT_NOT_FOUND")
+        )
+      }
+      throw err
+    }
+
     let secretMapName: string
     let configMapName: string
 

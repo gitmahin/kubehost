@@ -9,6 +9,8 @@ enum SYSTEM_CUSTOM_ERROR_EVENTS {
    INGRESS_ALREADY_EXISTS = "INGRESS_ALREADY_EXISTS",
   NAMESPACE_ALREADY_EXISTS = "NAMESPACE_ALREADY_EXISTS",
   DEPLOYMENT_ALREADY_EXISTS = "DEPLOYMENT_ALREADY_EXISTS",
+
+    DEPLOYMENT_NOT_FOUND = "DEPLOYMENT_NOT_FOUND",
 }
 
 export const SystemCustomErrorCode: Record<SYSTEM_CUSTOM_ERROR_EVENTS, string> =
@@ -23,6 +25,8 @@ export const SystemCustomErrorCode: Record<SYSTEM_CUSTOM_ERROR_EVENTS, string> =
   INGRESS_ALREADY_EXISTS: "40901",
   NAMESPACE_ALREADY_EXISTS: "40902",
   DEPLOYMENT_ALREADY_EXISTS: "40903",
+
+    DEPLOYMENT_NOT_FOUND: "40401",
   }
 
 export type SystemCustomErrorMessageDataType = {
@@ -86,6 +90,11 @@ export const SystemCustomErrorMsgByCode: SystemCustomErrorMessageType = {
     message: "A deployment with this name already exists in the namespace.",
     code: SystemCustomErrorCode.DEPLOYMENT_ALREADY_EXISTS,
   },
+  [SystemCustomErrorCode.DEPLOYMENT_NOT_FOUND]: {
+  title: "Deployment Not Found",
+  message: "No deployment with this name exists in the namespace.",
+  code: SystemCustomErrorCode.DEPLOYMENT_NOT_FOUND,
+},
 }
 
 /**

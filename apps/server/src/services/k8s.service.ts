@@ -209,16 +209,20 @@ export class K8sService {
     servicePort,
     path = "/",
   }: CreateIngressParams) {
-    const existingIngress = await this.networkingApi.readNamespacedIngress({
-      name: ingressName,
-      namespace,
-    })
+    try {
+      await this.networkingApi.readNamespacedIngress({
+        name: ingressName,
+        namespace,
+      })
 
-    if (existingIngress.metadata?.name) {
       throw new ApiError(
         400,
         getSystemCustomErrorMsgByKey("INGRESS_ALREADY_EXISTS")
       )
+    } catch (error: any) {
+      if (error?.code !== 404) {
+        throw error
+      }
     }
 
     await this.networkingApi.createNamespacedIngress({
@@ -261,89 +265,94 @@ export class K8sService {
     })
   }
 
-async updateIngress({
-  host,
-  namespace,
-  ingressName,
-  serviceName,
-  servicePort,
-  path = "/",
-}: CreateIngressParams) {
-  const existingIngress = await this.networkingApi.readNamespacedIngress({
-    name: ingressName,
+  async updateIngress({
+    host,
     namespace,
-  })
+    ingressName,
+    serviceName,
+    servicePort,
+    path = "/",
+  }: CreateIngressParams) {
+    const existingIngress = await this.networkingApi.readNamespacedIngress({
+      name: ingressName,
+      namespace,
+    })
 
-  const existingRules = existingIngress.spec?.rules ?? []
+    const existingRules = existingIngress.spec?.rules ?? []
 
-  const newPathEntry = {
-    path,
-    pathType: "Prefix",
-    backend: {
-      service: {
-        name: serviceName,
-        port: {
-          number: servicePort,
+    const newPathEntry = {
+      path,
+      pathType: "Prefix",
+      backend: {
+        service: {
+          name: serviceName,
+          port: {
+            number: servicePort,
+          },
         },
       },
-    },
-  }
+    }
 
-  const hostRuleIndex = existingRules.findIndex((rule) => rule.host === host)
+    const hostRuleIndex = existingRules.findIndex((rule) => rule.host === host)
 
-  let updatedRules
+    let updatedRules
 
-  if (hostRuleIndex >= 0) {
-    const existingPaths = existingRules[hostRuleIndex]?.http?.paths ?? []
+    if (hostRuleIndex >= 0) {
+      const existingPaths = existingRules[hostRuleIndex]?.http?.paths ?? []
 
-    const pathMatchIndex = existingPaths.findIndex((p) => p.path === path)
+      const pathMatchIndex = existingPaths.findIndex((p) => p.path === path)
 
-    const mergedPaths =
-      pathMatchIndex >= 0
-        ? existingPaths.map((p, i) => (i === pathMatchIndex ? newPathEntry : p))
-        : [...existingPaths, newPathEntry]
+      const mergedPaths =
+        pathMatchIndex >= 0
+          ? existingPaths.map((p, i) =>
+              i === pathMatchIndex ? newPathEntry : p
+            )
+          : [...existingPaths, newPathEntry]
 
-    updatedRules = existingRules.map((rule, i) =>
-      i === hostRuleIndex ? { ...rule, http: { paths: mergedPaths } } : rule
-    )
-  } else {
-    // add a brand-new rule with just this one path if new host
-    updatedRules = [
-      ...existingRules,
-      {
-        host,
-        http: { paths: [newPathEntry] },
+      updatedRules = existingRules.map((rule, i) =>
+        i === hostRuleIndex ? { ...rule, http: { paths: mergedPaths } } : rule
+      )
+    } else {
+      // add a brand-new rule with just this one path if new host
+      updatedRules = [
+        ...existingRules,
+        {
+          host,
+          http: { paths: [newPathEntry] },
+        },
+      ]
+    }
+
+    const response = await this.networkingApi.replaceNamespacedIngress({
+      name: ingressName,
+      namespace,
+      body: {
+        apiVersion: "networking.k8s.io/v1",
+        kind: "Ingress",
+        metadata: {
+          name: ingressName,
+          namespace,
+          resourceVersion: existingIngress.metadata?.resourceVersion,
+          annotations: existingIngress.metadata?.annotations,
+        },
+        spec: {
+          ingressClassName: existingIngress.spec?.ingressClassName ?? "nginx",
+          rules: updatedRules,
+        },
       },
-    ]
+      fieldManager: K8sService.FIELD_MANAGER,
+    })
+
+    return response
   }
 
-  const response = await this.networkingApi.replaceNamespacedIngress({
-    name: ingressName,
+  async getIngress({
+    ingressName,
     namespace,
-    body: {
-      apiVersion: "networking.k8s.io/v1",
-      kind: "Ingress",
-      metadata: {
-        name: ingressName,
-        namespace,
-        resourceVersion: existingIngress.metadata?.resourceVersion,
-        annotations: existingIngress.metadata?.annotations,
-      },
-      spec: {
-        ingressClassName: existingIngress.spec?.ingressClassName ?? "nginx",
-        rules: updatedRules,
-      },
-    },
-    fieldManager: K8sService.FIELD_MANAGER,
-  })
-
-  return response
-}
-
-async getIngress({ingressName, namespace}: Pick<CreateIngressParams, "namespace" | "ingressName">) {
-  return await this.networkingApi.readNamespacedIngress({
-    name: ingressName,
-    namespace
-  })
-}
+  }: Pick<CreateIngressParams, "namespace" | "ingressName">) {
+    return await this.networkingApi.readNamespacedIngress({
+      name: ingressName,
+      namespace,
+    })
+  }
 }

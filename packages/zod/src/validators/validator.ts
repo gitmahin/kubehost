@@ -1,4 +1,5 @@
 import { ZodBase, type IdZType } from "@/schemas";
+import { injectable } from "inversify";
 import type z from "zod";
 
 export class Validator {
