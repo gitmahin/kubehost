@@ -6,6 +6,7 @@ import { useNavigate } from "@tanstack/react-router"
 import { cn } from "@workspace/ui/lib/utils"
 import { getStatusStyle } from "@/utils/statusStyle"
 import Skeleton from "react-loading-skeleton"
+import { CirclePlus } from "lucide-react"
 
 type Deployment = {
     name?: string
@@ -24,13 +25,23 @@ export const ProjectSidebar = ({ project_id, depl_id }: { project_id: string, de
             return (res?.data.data ?? []) as Deployment[]
         },
         enabled: !!project_id,
+        refetchInterval: 4000,
+        refetchIntervalInBackground: true,
     })
 
     console.log(deployments)
 
     return (
         <aside className="w-[250px] h-[calc(100vh-55px)] sticky top-0 bg-zinc-900/30 border-r px-3 py-6">
-            <p className="text-sm font-medium text-zinc-400 mb-3 px-2">Services</p>
+            <Button className={"w-full justify-start "} onClick={() => {
+                navigate({
+                    to: "/projects/create/application",
+                    search: {
+                        project_name: project_id
+                    }
+                })
+            }}><CirclePlus /> New Deployment</Button>
+            <p className="text-sm font-medium text-zinc-400 mb-3 px-2 mt-5">Services</p>
 
             <nav className="flex flex-col gap-1">
                 {isLoading && (

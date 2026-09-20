@@ -92,6 +92,16 @@ export class ProjectRouter implements IRouter {
           )
         )
       )
+
+       this.router
+      .route("/:project_name/deployments/:deployment_name")
+      .get(
+        asyncHandler(
+          this.projectController.getDeploymentEditData.bind(
+            this.projectController
+          )
+        )
+      )
   }
 
   getRouters(): Router {

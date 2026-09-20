@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { Plus } from "lucide-react"
 import {
   Field,
@@ -15,12 +17,23 @@ import {
   Button,
 } from "@workspace/ui/components"
 import { ProjectZSchema } from "@repo/zod"
-import type { ApplicationCreateInputType } from "@repo/zod"
+import type {
+  ApplicationCreateInputType,
+  ApplicationCreateServerInputType,
+} from "@repo/zod"
 import { EnvVarRow } from "@/components/deployments"
+import { projectService } from "@/lib/service"
+
+type SearchParams = {
+  project_name?: string
+}
 
 export const Route = createFileRoute(
   "/_pathlessMain/projects/create/application/"
 )({
+  validateSearch: (search: Record<string, unknown>): SearchParams => ({
+    project_name: (search.project_name as string) ?? "",
+  }),
   component: RouteComponent,
 })
 
@@ -32,6 +45,14 @@ export type SecretMapDataType = {
 }
 
 function RouteComponent() {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  // Capture `project_name` passed from search parameters
+  const { project_name: projectName } = useSearch({
+    from: "/_pathlessMain/projects/create/application/",
+  })
+
   const {
     register,
     control,
@@ -42,9 +63,16 @@ function RouteComponent() {
     // @ts-ignore
     resolver: zodResolver(ProjectZSchema.applicationSchema),
     defaultValues: {
+      deploymentName: "",
+      image: "",
+      containerName: "",
+      containerPort: 8080,
+      portBinding: 80,
       replicas: 1,
       envVars: [],
       visibility: "private",
+      host: "",
+      path: "/",
     },
   })
 
@@ -54,20 +82,72 @@ function RouteComponent() {
     control,
     name: "envVars",
   })
+
+  // Mutation to send structured deployment data to server
+  const createDeploymentMutation = useMutation({
+    mutationFn: async (payload: ApplicationCreateServerInputType) => {
+      const toastId = toast.loading("Deploying application...")
+
+      try {
+        const res: any = await projectService.createDeployment(payload)
+
+        toast.success(res?.message ?? "Deployment Created Successfully!", {
+          id: toastId,
+        })
+
+        queryClient.invalidateQueries({
+          queryKey: ["deployments", payload.projectName],
+        })
+
+        // Redirect to dashboard page
+        navigate({
+          to: "/projects/$project_id/depl/$depl_id",
+          params: {
+            project_id: payload.projectName,
+            depl_id: payload.deploymentName,
+          },
+        })
+
+        return res
+      } catch (error: any) {
+
+        toast.error(error.message, {
+          id: toastId,
+          description: error.errors?.length ? String(error.errors[0]) : undefined,
+        })
+
+
+      }
+    },
+  })
+
   const onSubmit = (values: ApplicationCreateInputType) => {
+    if (!projectName) {
+      toast.error("Missing Project Name. Please create or select a project first.")
+      return
+    }
+
     const secretEnvs: SecretMapDataType = {}
     const nonSecretEnvs: SecretMapDataType = {}
 
-    for (const { key, name, value, isSecret } of values.envVars) {
+    // Group secrets and non-secrets
+    for (const { key, name, value, isSecret } of values.envVars ?? []) {
+      if (!key) continue
       const target = isSecret ? secretEnvs : nonSecretEnvs
       target[key] = { name, value }
     }
 
-    console.log({
-      ...values,
+    // Omit `envVars` and compose server input matching ApplicationCreateServerInputType
+    const { envVars, ...restValues } = values
+
+    const serverPayload: ApplicationCreateServerInputType = {
+      ...restValues,
+      projectName,
       secretEnvs,
       nonSecretEnvs,
-    })
+    }
+
+    createDeploymentMutation.mutate(serverPayload)
   }
 
   return (
@@ -83,15 +163,33 @@ function RouteComponent() {
           <FieldSet>
             <FieldLegend>Deploy New Application</FieldLegend>
             <FieldDescription>
-              All transactions are secure and encrypted
+              Deploying to project:{" "}
+              <span className="font-semibold text-zinc-100">
+                {projectName || "Unspecified"}
+              </span>
             </FieldDescription>
             <FieldGroup>
+              <Field data-invalid={!!errors.deploymentName}>
+                <FieldLabel htmlFor="deploymentName">Deployment Name</FieldLabel>
+                <Input
+                  id="deploymentName"
+                  placeholder="my-node-app"
+                  aria-invalid={!!errors.deploymentName}
+                  disabled={createDeploymentMutation.isPending}
+                  {...register("deploymentName")}
+                />
+                {errors.deploymentName && (
+                  <FieldError>{errors.deploymentName.message}</FieldError>
+                )}
+              </Field>
+
               <Field data-invalid={!!errors.image}>
                 <FieldLabel htmlFor="image">Image</FieldLabel>
                 <Input
                   id="image"
                   placeholder="nginx:latest"
                   aria-invalid={!!errors.image}
+                  disabled={createDeploymentMutation.isPending}
                   {...register("image")}
                 />
                 {errors.image && (
@@ -105,6 +203,7 @@ function RouteComponent() {
                   id="container-name"
                   placeholder="my-app-container"
                   aria-invalid={!!errors.containerName}
+                  disabled={createDeploymentMutation.isPending}
                   {...register("containerName")}
                 />
                 {errors.containerName && (
@@ -122,6 +221,7 @@ function RouteComponent() {
                     type="number"
                     placeholder="8080"
                     aria-invalid={!!errors.containerPort}
+                    disabled={createDeploymentMutation.isPending}
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e") e.preventDefault()
                     }}
@@ -139,6 +239,7 @@ function RouteComponent() {
                     type="number"
                     placeholder="80"
                     aria-invalid={!!errors.portBinding}
+                    disabled={createDeploymentMutation.isPending}
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e") e.preventDefault()
                     }}
@@ -157,6 +258,7 @@ function RouteComponent() {
                   type="number"
                   placeholder="1"
                   aria-invalid={!!errors.replicas}
+                  disabled={createDeploymentMutation.isPending}
                   onKeyDown={(e) => {
                     if (e.key === "-" || e.key === "e") e.preventDefault()
                   }}
@@ -189,6 +291,7 @@ function RouteComponent() {
                           field.value === "private" ? "default" : "outline"
                         }
                         className="flex-1"
+                        disabled={createDeploymentMutation.isPending}
                         onClick={() => field.onChange("private")}
                       >
                         Private
@@ -199,6 +302,7 @@ function RouteComponent() {
                           field.value === "public" ? "default" : "outline"
                         }
                         className="flex-1"
+                        disabled={createDeploymentMutation.isPending}
                         onClick={() => field.onChange("public")}
                       >
                         Public
@@ -225,6 +329,7 @@ function RouteComponent() {
                       id="host"
                       placeholder="app.example.com"
                       aria-invalid={!!errors.host}
+                      disabled={createDeploymentMutation.isPending}
                       {...register("host")}
                     />
                     {errors.host && (
@@ -241,6 +346,7 @@ function RouteComponent() {
                       id="path"
                       placeholder="/"
                       aria-invalid={!!errors.path}
+                      disabled={createDeploymentMutation.isPending}
                       {...register("path")}
                     />
                     {errors.path && (
@@ -278,18 +384,29 @@ function RouteComponent() {
                 type="button"
                 variant="outline"
                 className="w-full"
+                disabled={createDeploymentMutation.isPending}
                 onClick={() =>
                   append({ key: "", name: "", value: "", isSecret: false })
                 }
               >
-                <Plus className="h-4 w-4" /> Add Environment Variable
+                <Plus className="h-4 w-4 mr-2" /> Add Environment Variable
               </Button>
             </FieldGroup>
           </FieldSet>
 
-          <Field orientation="horizontal">
-            <Button type="submit">Deploy</Button>
-            <Button variant="outline" type="button">
+          <Field orientation="horizontal" className="flex gap-2">
+            <Button
+              type="submit"
+              disabled={createDeploymentMutation.isPending}
+            >
+              {createDeploymentMutation.isPending ? "Deploying..." : "Deploy"}
+            </Button>
+            <Button
+              variant="outline"
+              type="button"
+              disabled={createDeploymentMutation.isPending}
+              onClick={() => navigate({ to: "/deployments" })}
+            >
               Cancel
             </Button>
           </Field>

@@ -3,6 +3,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
+import { Toaster } from 'sonner';
 
 const queryClient = new QueryClient()
 
@@ -46,7 +47,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="dark overflow-x-hidden">
         <QueryClientProvider client={queryClient}>
-
+   <Toaster richColors={true} position="top-center"  />
           {children}
         </QueryClientProvider>
         <Scripts />

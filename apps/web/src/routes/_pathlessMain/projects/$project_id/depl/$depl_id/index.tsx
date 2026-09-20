@@ -1,18 +1,16 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import Skeleton from "react-loading-skeleton"
 import "react-loading-skeleton/dist/skeleton.css"
+import { toast } from "sonner"
 import {
   Pencil,
   Trash2,
   Server,
   Globe,
   Boxes,
-  Cpu,
-  Layers,
   ExternalLink,
-  ShieldAlert,
 } from "lucide-react"
 import {
   PieChart,
@@ -34,7 +32,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@workspace/ui/components"
+} from "@workspace/ui/components/card"
 import {
   Table,
   TableHeader,
@@ -44,10 +42,21 @@ import {
   TableCell,
 } from "@workspace/ui/components/table"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components"
+import {
   ChartContainer,
   ChartTooltipContent,
   type ChartConfig,
-} from "@workspace/ui/components"
+} from "@workspace/ui/components/chart"
 import { cn } from "@workspace/ui/lib/utils"
 import { projectService } from "@/lib/service"
 
@@ -137,43 +146,56 @@ function RouteComponent() {
   const { project_id, depl_id } = Route.useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Fetch dashboard data
-  const { data, isLoading } = useQuery({
-    queryKey: ["dashboard", project_id, depl_id],
-    queryFn: async () => {
-      const res: any = await projectService.getDashboard({
-        project_name: project_id,
-        deployment_name: depl_id,
-      })
-      return (res?.data?.data ?? res?.data) as DashboardData
-    },
-    enabled: !!project_id && !!depl_id,
-  })
+const { data, isLoading } = useQuery({
+  queryKey: ["dashboard", project_id, depl_id],
+  queryFn: async () => {
+    const res: any = await projectService.getDashboard({
+      project_name: project_id,
+      deployment_name: depl_id,
+    })
+    return (res?.data?.data ?? res?.data) as DashboardData
+  },
+  enabled: !!project_id && !!depl_id,
+  refetchInterval: 4000, 
+  refetchIntervalInBackground: true, 
+})
 
-  // Delete Deployment Mutation
+  // Delete Deployment Mutation using Sonner toasts
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      await projectService.deleteDeployment({
+      return await projectService.deleteDeployment({
         project_name: project_id,
         deployment_name: depl_id,
       })
     },
-    onSuccess: () => {
+    onSuccess: (res: any) => {
+      toast.success(res?.message ?? `Deployment "${depl_id}" deleted successfully.`)
       queryClient.invalidateQueries({ queryKey: ["deployments"] })
+      setIsDeleteDialogOpen(false)
       navigate({ to: "/deployments" })
+    },
+    onError: (error: any) => {
+
+      toast.error(error.message, {
+        description: error.errors?.length ? String(error.errors[0]) : undefined,
+      })
     },
   })
 
-  const handleDelete = () => {
-    if (
-      confirm(
-        `Are you sure you want to delete "${depl_id}" in project "${project_id}"?`
-      )
-    ) {
-      deleteMutation.mutate()
-    }
-  }
+
+  const uniqueIngress = useMemo(() => {
+  if (!data?.ingress) return []
+  const seen = new Set<string>()
+  return data.ingress.filter((ing) => {
+    if (!ing.host || seen.has(ing.host)) return false
+    seen.add(ing.host)
+    return true
+  })
+}, [data?.ingress])
+
 
   // Chart Data Calculations
   const replicaData = useMemo(() => {
@@ -227,8 +249,8 @@ function RouteComponent() {
 
   const deployment = data?.deployment
   const service = data?.service
-  const ingressList = data?.ingress ?? []
   const pods = data?.pods ?? []
+
 
   return (
     <div className="w-full p-6 flex flex-col gap-6 text-zinc-100">
@@ -251,7 +273,7 @@ function RouteComponent() {
             className="border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
             onClick={() => {
               navigate({
-                to: "/projects/$project_id/depl/$depl_id",
+                to: "/projects/$project_id/depl/$depl_id/edit",
                 params: { project_id, depl_id },
               })
             }}
@@ -260,22 +282,51 @@ function RouteComponent() {
             Edit
           </Button>
 
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={deleteMutation.isPending}
-            onClick={handleDelete}
-            className="bg-red-900/40 border border-red-800/60 text-red-300 hover:bg-red-800/60"
-          >
-            <Trash2 className="w-4 h-4 mr-1.5" />
-            {deleteMutation.isPending ? "Deleting..." : "Delete"}
-          </Button>
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogTrigger>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="bg-red-900/40 border border-red-800/60 text-red-300 hover:bg-red-800/60"
+              >
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="border-zinc-800 bg-zinc-900 text-zinc-100">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-zinc-50">
+                  Delete Deployment
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-zinc-400">
+                  Are you sure you want to delete deployment{" "}
+                  <span className="font-semibold text-zinc-200">{depl_id}</span> in project{" "}
+                  <span className="font-semibold text-zinc-200">{project_id}</span>? This
+                  action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100">
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={deleteMutation.isPending}
+                  onClick={(e: any) => {
+                    e.preventDefault()
+                    deleteMutation.mutate()
+                  }}
+                  className="bg-red-600 text-white hover:bg-red-700"
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete Deployment"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
       {/* Top Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Replicas Overview */}
         <Card className="border-zinc-800 bg-zinc-900/40">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Replicas</CardTitle>
@@ -291,7 +342,6 @@ function RouteComponent() {
           </CardContent>
         </Card>
 
-        {/* Networking Service */}
         <Card className="border-zinc-800 bg-zinc-900/40">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Service IP</CardTitle>
@@ -311,37 +361,40 @@ function RouteComponent() {
           </CardContent>
         </Card>
 
-        {/* External Ingress */}
         <Card className="border-zinc-800 bg-zinc-900/40">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Ingress Host</CardTitle>
             <Globe className="w-4 h-4 text-zinc-500" />
           </CardHeader>
           <CardContent>
-            {ingressList.length > 0 ? (
-              ingressList.map((ing, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-sm font-mono text-blue-400">
-                  <a
-                    href={`http://${ing.host}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:underline flex items-center gap-1"
-                  >
-                    {ing.host}
-                    <ExternalLink className="w-3 h-3 text-zinc-500" />
-                  </a>
-                </div>
-              ))
-            ) : (
-              <span className="text-sm text-zinc-500">No Ingress routing set</span>
-            )}
+          {uniqueIngress.length > 0 ? (
+  <div className="flex flex-col gap-1">
+    {uniqueIngress.map((ing, i) => (
+      <div
+        key={`${ing.name ?? i}-${ing.host}`}
+        className="flex items-center gap-1.5 text-sm font-mono text-blue-400"
+      >
+        <a
+          href={`http://${ing.host}${ing.path ?? ""}`}
+          target="_blank"
+          rel="noreferrer"
+          className="hover:underline flex items-center gap-1"
+        >
+          {ing.host}
+          <ExternalLink className="w-3 h-3 text-zinc-500" />
+        </a>
+      </div>
+    ))}
+  </div>
+) : (
+  <span className="text-sm text-zinc-500">No Ingress routing set</span>
+)}
           </CardContent>
         </Card>
       </div>
 
       {/* Analytics & Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Replica Distribution Pie Chart */}
         <Card className="border-zinc-800 bg-zinc-900/40">
           <CardHeader>
             <CardTitle className="text-base text-zinc-100">Replica Health Distribution</CardTitle>
@@ -374,7 +427,6 @@ function RouteComponent() {
           </CardContent>
         </Card>
 
-        {/* Pod Restarts Bar Chart */}
         <Card className="border-zinc-800 bg-zinc-900/40">
           <CardHeader>
             <CardTitle className="text-base text-zinc-100">Pod Restarts</CardTitle>
@@ -401,9 +453,9 @@ function RouteComponent() {
       <Card className="border-zinc-800 bg-zinc-900/40">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-base text-zinc-100">Pod Instances</CardTitle>
+            <CardTitle className="text-base text-zinc-100">Instances</CardTitle>
             <CardDescription className="text-xs text-zinc-500">
-              Real-time telemetry and metrics for active runtime containers
+              Metrics for active runtime containers
             </CardDescription>
           </div>
           <Badge variant="outline" className="border-zinc-700 text-zinc-400">

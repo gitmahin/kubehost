@@ -177,4 +177,18 @@ export class ProjectController {
     )
     return res.status(200).json(new ApiResponse(200, "Ok", response))
   }
+
+  async getDeploymentEditData(req: Request, res: Response) {
+    const payload = req.params as ProjectAndDeploymentNameInputType
+    const parsePayload =
+      this.projectInputValidators.projectAndDeploymentNameInput(payload)
+    if (isZodError(parsePayload)) throw validationError(parsePayload)
+    const { deployment_name, project_name } = parsePayload
+
+    const response = await this.projectService.getDeploymentEditData(
+      project_name,
+      deployment_name
+    )
+    return res.status(200).json(new ApiResponse(200, "Ok", response))
+  }
 }

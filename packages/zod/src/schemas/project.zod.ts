@@ -72,7 +72,9 @@ export class ProjectZSchema extends ZodBase {
 
   static applicationSchema = this.applicationBaseSchema.superRefine(
     this.hostRequiredForPublic
-  )
+  ).extend({
+      deploymentName: this.deploymentName,
+  })
 
   static applicationDeploymentServerSchema = this.applicationBaseSchema
     .omit({ envVars: true })

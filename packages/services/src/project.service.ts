@@ -41,6 +41,13 @@ export class ProjectService extends ApiService {
     return this.delete(`/${project_name}/deployments/${deployment_name}`)
   }
 
+  async getDeploymentEditData({
+    project_name,
+    deployment_name,
+  }: ProjectAndDeploymentNameInputType) {
+    return this.get(`/${project_name}/deployments/${deployment_name}`)
+  }
+
   async getDashboard({
     project_name,
     deployment_name,
