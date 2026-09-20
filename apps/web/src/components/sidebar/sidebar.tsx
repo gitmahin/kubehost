@@ -47,16 +47,16 @@ const SidebarLinks: SidebarLinkType[] = [
 const APP_VERSION = "v1.0.0"
 
 const linkClass = (isActive: boolean) =>
-  `flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors ${isActive
-    ? "bg-zinc-800 text-zinc-50 font-medium"
-    : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-50"
+  `flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors ${
+    isActive
+      ? "bg-zinc-800 text-zinc-50 font-medium"
+      : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-50"
   }`
 
 export const Sidebar = () => {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
@@ -65,7 +65,6 @@ export const Sidebar = () => {
       return (res?.data.data ?? []) as Project[]
     },
   })
-
 
   const isProjectsSectionActive = pathname.startsWith("/projects")
   const [projectsOpen, setProjectsOpen] = useState(isProjectsSectionActive)
@@ -90,8 +89,9 @@ export const Sidebar = () => {
               Projects
             </span>
             <ChevronDown
-              className={`h-4 w-4 shrink-0 transition-transform ${projectsOpen ? "rotate-180" : ""
-                }`}
+              className={`h-4 w-4 shrink-0 transition-transform ${
+                projectsOpen ? "rotate-180" : ""
+              }`}
             />
           </CollapsibleTrigger>
 
@@ -103,12 +103,11 @@ export const Sidebar = () => {
                   const currentWidth = widths[index % widths.length]
 
                   return (
-                    <div key={index} className="flex items-center justify-between w-full h-7">
-                      <Skeleton
-                        width={currentWidth}
-                        height={20}
-            
-                      />
+                    <div
+                      key={index}
+                      className="flex h-7 w-full items-center justify-between"
+                    >
+                      <Skeleton width={currentWidth} height={20} />
                     </div>
                   )
                 })}

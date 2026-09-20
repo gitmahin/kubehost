@@ -6,11 +6,16 @@ export const Route = createFileRoute("/_pathlessMain/projects/$project_id")({
 })
 
 function RouteComponent() {
-  const { project_id, depl_id} = useParams({
-  strict: false
-})
-  return <div className="w-full h-full flex justify-start items-start">
-    <ProjectSidebar project_id={project_id as string} depl_id={depl_id as string}/>
-    <Outlet />
-  </div>
+  const { project_id, depl_id } = useParams({
+    strict: false,
+  })
+  return (
+    <div className="flex h-full w-full items-start justify-start">
+      <ProjectSidebar
+        project_id={project_id as string}
+        depl_id={depl_id as string}
+      />
+      <Outlet />
+    </div>
+  )
 }

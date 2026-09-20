@@ -81,7 +81,8 @@ const statusStyles: Record<string, string> = {
 
 function getStatusStyle(status?: string) {
   return (
-    statusStyles[status ?? ""] ?? "border-zinc-600/40 text-zinc-400 bg-zinc-500/10"
+    statusStyles[status ?? ""] ??
+    "border-zinc-600/40 text-zinc-400 bg-zinc-500/10"
   )
 }
 
@@ -110,7 +111,11 @@ function RouteComponent() {
     },
   })
 
-  const { data: deployments = [], isLoading, isFetching } = useQuery({
+  const {
+    data: deployments = [],
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ["deployments", selectedProject],
     queryFn: async () => {
       const res: any = await projectService.getAllDeployments(
@@ -140,7 +145,7 @@ function RouteComponent() {
         header: "Image",
         accessorFn: (row) => row.image?.name,
         cell: ({ getValue }) => (
-          <span className="font-mono text-xs text-zinc-400 truncate block max-w-[220px]">
+          <span className="block max-w-[220px] truncate font-mono text-xs text-zinc-400">
             {getValue<string>() ?? "-"}
           </span>
         ),
@@ -157,7 +162,7 @@ function RouteComponent() {
               {row.original.status}
             </Badge>
             {row.original.statusMessage && (
-              <span className="text-[11px] text-zinc-500 truncate max-w-[200px]">
+              <span className="max-w-[200px] truncate text-[11px] text-zinc-500">
                 {row.original.statusMessage}
               </span>
             )}
@@ -219,12 +224,12 @@ function RouteComponent() {
 
   const isTableLoading = isLoading || isFetching
 
-  if(deployments.length === 0) {
-    return <EmptyDeployment/>
+  if (deployments.length === 0) {
+    return <EmptyDeployment />
   }
 
   return (
-    <div className="w-full p-6 flex flex-col gap-4">
+    <div className="flex w-full flex-col gap-4 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-zinc-50">Deployments</h1>
 
@@ -272,31 +277,70 @@ function RouteComponent() {
                 <TableRow key={index}>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <Skeleton width={120} height={16} baseColor="#27272a" highlightColor="#3f3f46" />
-                      <Skeleton width={80} height={12} baseColor="#27272a" highlightColor="#3f3f46" />
+                      <Skeleton
+                        width={120}
+                        height={16}
+                        baseColor="#27272a"
+                        highlightColor="#3f3f46"
+                      />
+                      <Skeleton
+                        width={80}
+                        height={12}
+                        baseColor="#27272a"
+                        highlightColor="#3f3f46"
+                      />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Skeleton width={150} height={14} baseColor="#27272a" highlightColor="#3f3f46" />
+                    <Skeleton
+                      width={150}
+                      height={14}
+                      baseColor="#27272a"
+                      highlightColor="#3f3f46"
+                    />
                   </TableCell>
                   <TableCell>
-                    <Skeleton width={70} height={20} borderRadius={6} baseColor="#27272a" highlightColor="#3f3f46" />
+                    <Skeleton
+                      width={70}
+                      height={20}
+                      borderRadius={6}
+                      baseColor="#27272a"
+                      highlightColor="#3f3f46"
+                    />
                   </TableCell>
                   <TableCell>
-                    <Skeleton width={80} height={14} baseColor="#27272a" highlightColor="#3f3f46" />
+                    <Skeleton
+                      width={80}
+                      height={14}
+                      baseColor="#27272a"
+                      highlightColor="#3f3f46"
+                    />
                   </TableCell>
                   <TableCell>
-                    <Skeleton width={40} height={14} baseColor="#27272a" highlightColor="#3f3f46" />
+                    <Skeleton
+                      width={40}
+                      height={14}
+                      baseColor="#27272a"
+                      highlightColor="#3f3f46"
+                    />
                   </TableCell>
                   <TableCell>
-                    <Skeleton width={60} height={14} baseColor="#27272a" highlightColor="#3f3f46" />
+                    <Skeleton
+                      width={60}
+                      height={14}
+                      baseColor="#27272a"
+                      highlightColor="#3f3f46"
+                    />
                   </TableCell>
                 </TableRow>
               ))}
 
             {!isTableLoading && deployments.length === 0 && (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center text-zinc-500 py-8">
+                <TableCell
+                  colSpan={columns.length}
+                  className="py-8 text-center text-zinc-500"
+                >
                   No deployments found
                 </TableCell>
               </TableRow>
@@ -304,13 +348,13 @@ function RouteComponent() {
 
             {!isTableLoading &&
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="hover:bg-zinc-900/50"
-                >
+                <TableRow key={row.id} className="hover:bg-zinc-900/50">
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>

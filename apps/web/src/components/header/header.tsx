@@ -23,7 +23,7 @@ const addNewOptions: AddNewOption[] = [
 
 export const Header = () => {
   return (
-    <header className="sticky top-0 flex h-[55px] w-full items-center justify-between border-b px-3 bg-zinc-950 relative z-50">
+    <header className="relative sticky top-0 z-50 flex h-[55px] w-full items-center justify-between border-b bg-zinc-950 px-3">
       <div></div>
 
       <div className="shrink-0">

@@ -51,7 +51,10 @@ export function RouteComponent() {
     queryKey: ["deployments", "all"],
     queryFn: async () => {
       const res: any = await projectService.getAllDeployments("")
-      return (res?.data?.deployments ?? res?.data?.data ?? res?.data ?? []) as Deployment[]
+      return (res?.data?.deployments ??
+        res?.data?.data ??
+        res?.data ??
+        []) as Deployment[]
     },
   })
 
@@ -61,11 +64,12 @@ export function RouteComponent() {
       accessorFn: (row) => {
         if (typeof row.image === "string") return row.image
         if (row.image?.name) return row.image.name
-        if (Array.isArray(row.images) && row.images.length > 0) return row.images[0]
+        if (Array.isArray(row.images) && row.images.length > 0)
+          return row.images[0]
         return "-"
       },
       cell: ({ getValue }) => (
-        <span className="font-mono text-sm text-zinc-300 truncate block">
+        <span className="block truncate font-mono text-sm text-zinc-300">
           {getValue<string>()}
         </span>
       ),
@@ -94,7 +98,7 @@ export function RouteComponent() {
   }
 
   return (
-    <div className="w-full p-6 flex flex-col gap-4">
+    <div className="flex w-full flex-col gap-4 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-zinc-50">Images</h1>
       </div>
@@ -133,13 +137,13 @@ export function RouteComponent() {
 
             {!isTableLoading &&
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="hover:bg-zinc-900/50"
-                >
+                <TableRow key={row.id} className="hover:bg-zinc-900/50">
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>

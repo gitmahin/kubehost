@@ -31,7 +31,11 @@ type Domain = {
 }
 
 function RouteComponent() {
-  const { data: domains = [], isLoading, isFetching } = useQuery({
+  const {
+    data: domains = [],
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ["domains"],
     queryFn: async () => {
       const res: any = await projectService.getAllDomains()
@@ -54,7 +58,10 @@ function RouteComponent() {
         header: "Project",
         accessorKey: "namespace",
         cell: ({ getValue }) => (
-          <Badge variant="outline" className="border-zinc-700 text-zinc-300 bg-zinc-800/40">
+          <Badge
+            variant="outline"
+            className="border-zinc-700 bg-zinc-800/40 text-zinc-300"
+          >
             {getValue<string>()}
           </Badge>
         ),
@@ -63,9 +70,7 @@ function RouteComponent() {
         header: "Service",
         accessorKey: "ingress",
         cell: ({ getValue }) => (
-          <span className="text-sm text-zinc-400">
-            {getValue<string>()}
-          </span>
+          <span className="text-sm text-zinc-400">{getValue<string>()}</span>
         ),
       },
     ],
@@ -82,7 +87,7 @@ function RouteComponent() {
   const skeletonWidths = [180, 110, 140, 95]
 
   return (
-    <div className="w-full p-6 flex flex-col gap-4">
+    <div className="flex w-full flex-col gap-4 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-zinc-50">Domains</h1>
       </div>
@@ -91,15 +96,18 @@ function RouteComponent() {
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-zinc-800 hover:bg-transparent">
+              <TableRow
+                key={headerGroup.id}
+                className="border-zinc-800 hover:bg-transparent"
+              >
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id} className="text-zinc-400">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -142,7 +150,7 @@ function RouteComponent() {
               <TableRow className="border-zinc-800">
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center text-zinc-500 py-8 text-sm"
+                  className="py-8 text-center text-sm text-zinc-500"
                 >
                   No domains configured
                 </TableCell>

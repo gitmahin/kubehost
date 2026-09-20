@@ -110,20 +110,21 @@ function RouteComponent() {
 
         return res
       } catch (error: any) {
-
         toast.error(error.message, {
           id: toastId,
-          description: error.errors?.length ? String(error.errors[0]) : undefined,
+          description: error.errors?.length
+            ? String(error.errors[0])
+            : undefined,
         })
-
-
       }
     },
   })
 
   const onSubmit = (values: ApplicationCreateInputType) => {
     if (!projectName) {
-      toast.error("Missing Project Name. Please create or select a project first.")
+      toast.error(
+        "Missing Project Name. Please create or select a project first."
+      )
       return
     }
 
@@ -170,7 +171,9 @@ function RouteComponent() {
             </FieldDescription>
             <FieldGroup>
               <Field data-invalid={!!errors.deploymentName}>
-                <FieldLabel htmlFor="deploymentName">Deployment Name</FieldLabel>
+                <FieldLabel htmlFor="deploymentName">
+                  Deployment Name
+                </FieldLabel>
                 <Input
                   id="deploymentName"
                   placeholder="my-node-app"
@@ -240,7 +243,10 @@ function RouteComponent() {
                     placeholder="80"
                     defaultValue={80}
                     aria-invalid={!!errors.portBinding}
-                    disabled={createDeploymentMutation.isPending || visibility == "public"}
+                    disabled={
+                      createDeploymentMutation.isPending ||
+                      visibility == "public"
+                    }
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e") e.preventDefault()
                     }}
@@ -390,16 +396,13 @@ function RouteComponent() {
                   append({ key: "", name: "", value: "", isSecret: false })
                 }
               >
-                <Plus className="h-4 w-4 mr-2" /> Add Environment Variable
+                <Plus className="mr-2 h-4 w-4" /> Add Environment Variable
               </Button>
             </FieldGroup>
           </FieldSet>
 
           <Field orientation="horizontal" className="flex gap-2">
-            <Button
-              type="submit"
-              disabled={createDeploymentMutation.isPending}
-            >
+            <Button type="submit" disabled={createDeploymentMutation.isPending}>
               {createDeploymentMutation.isPending ? "Deploying..." : "Deploy"}
             </Button>
             <Button

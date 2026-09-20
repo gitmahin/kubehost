@@ -93,7 +93,7 @@ export class ProjectRouter implements IRouter {
         )
       )
 
-       this.router
+    this.router
       .route("/:project_name/deployments/:deployment_name")
       .get(
         asyncHandler(

@@ -590,7 +590,7 @@ export class ProjectService {
     } else {
       await this.k8sService.deleteIngress({
         ingressName,
-        namespace
+        namespace,
       })
     }
     // console.log("Updated existing deployment:", updatedDeploymentResponse)

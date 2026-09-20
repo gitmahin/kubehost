@@ -23,10 +23,8 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const [projectName, setProjectName] = useState("")
 
- 
   const createProjectMutation = useMutation({
     mutationFn: async (name: string) => {
-    
       const toastId = toast.loading("Creating project...")
 
       try {
@@ -35,13 +33,15 @@ function RouteComponent() {
         const responseData = res?.data?.data ?? res?.data ?? res
 
         const createdProjectName =
-          responseData?.project_name ?? responseData?.name ?? responseData?.id ?? name
+          responseData?.project_name ??
+          responseData?.name ??
+          responseData?.id ??
+          name
 
         toast.success(res?.message ?? "Project created successfully!", {
           id: toastId,
         })
 
-  
         queryClient.invalidateQueries({ queryKey: ["projects"] })
         navigate({
           to: "/projects/create/application",
@@ -50,13 +50,12 @@ function RouteComponent() {
 
         return responseData
       } catch (error: any) {
-     
-          toast.error(error.message, {
-            id: toastId,
-            description: error.errors?.length ? String(error.errors[0]) : undefined,
-          })
-       
-    
+        toast.error(error.message, {
+          id: toastId,
+          description: error.errors?.length
+            ? String(error.errors[0])
+            : undefined,
+        })
       }
     },
   })
@@ -100,10 +99,7 @@ function RouteComponent() {
           </FieldSet>
 
           <Field orientation="horizontal" className="flex gap-2">
-            <Button
-              type="submit"
-              disabled={createProjectMutation.isPending}
-            >
+            <Button type="submit" disabled={createProjectMutation.isPending}>
               {createProjectMutation.isPending ? "Creating..." : "Create"}
             </Button>
             <Button
