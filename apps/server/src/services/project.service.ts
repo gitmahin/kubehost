@@ -25,6 +25,15 @@ type CreateServiceParams = {
   serviceName: string
 }
 
+type DeleteDeploymentParams = {
+  namespace: string
+  deploymentName: string
+  serviceName: string
+  secretName: string
+  configName: string
+  ingressName: string
+}
+
 @injectable()
 export class ProjectService {
   constructor(
@@ -82,15 +91,15 @@ export class ProjectService {
       const isManaged = deployment.metadata?.managedFields?.some(
         (mf) => mf.manager === K8sService.FIELD_MANAGER
       )
-      console.log(
-        deployment.metadata?.name,
-        "-> managed by kubehost?",
-        isManaged
-      )
+      // console.log(
+      //   deployment.metadata?.name,
+      //   "-> managed by kubehost?",
+      //   isManaged
+      // )
       return isManaged
     })
 
-    console.log("Filtered count:", filtered.length)
+    // console.log("Filtered count:", filtered.length)
 
     return filtered.map((deployment) => {
       const container = deployment.spec?.template?.spec?.containers?.[0]
@@ -191,70 +200,68 @@ export class ProjectService {
       createdConfigMapName = update.metadata?.name as string
     }
 
-    const deployment = await this.k8sService.appsApi.createNamespacedDeployment(
-      {
-        namespace: namespace,
-        body: {
-          apiVersion: "apps/v1",
-          kind: "Deployment",
-          metadata: {
-            name: deploymentName,
-            labels: {
-              app: labelName,
-            },
+    await this.k8sService.appsApi.createNamespacedDeployment({
+      namespace: namespace,
+      body: {
+        apiVersion: "apps/v1",
+        kind: "Deployment",
+        metadata: {
+          name: deploymentName,
+          labels: {
+            app: labelName,
           },
-          spec: {
-            replicas,
-            selector: { matchLabels: { app: labelName } },
-            template: {
-              metadata: { labels: { app: labelName } },
-              spec: {
-                containers: [
-                  {
-                    name: containerName,
-                    image: image,
-                    ports: [
-                      {
-                        containerPort,
-                        protocol: "TCP",
-                      },
-                    ],
-                    env: [
-                      ...Object.keys(secretEnvs).map((key) => {
-                        return {
-                          name: secretEnvs[key]!.name,
-                          valueFrom: {
-                            secretKeyRef: {
-                              name: createdSecretMapName,
-                              key: key,
-                            },
+        },
+        spec: {
+          replicas,
+          selector: { matchLabels: { app: labelName } },
+          template: {
+            metadata: { labels: { app: labelName } },
+            spec: {
+              containers: [
+                {
+                  name: containerName,
+                  image: image,
+                  ports: [
+                    {
+                      containerPort,
+                      protocol: "TCP",
+                    },
+                  ],
+                  env: [
+                    ...Object.keys(secretEnvs).map((key) => {
+                      return {
+                        name: secretEnvs[key]!.name,
+                        valueFrom: {
+                          secretKeyRef: {
+                            name: createdSecretMapName,
+                            key: key,
                           },
-                        }
-                      }),
-                      ...Object.keys(nonSecretEnvs).map((key) => {
-                        return {
-                          name: nonSecretEnvs[key]!.name,
-                          valueFrom: {
-                            configMapKeyRef: {
-                              name: createdConfigMapName,
-                              key: key,
-                            },
+                        },
+                      }
+                    }),
+                    ...Object.keys(nonSecretEnvs).map((key) => {
+                      return {
+                        name: nonSecretEnvs[key]!.name,
+                        valueFrom: {
+                          configMapKeyRef: {
+                            name: createdConfigMapName,
+                            key: key,
                           },
-                        }
-                      }),
-                    ],
-                  },
-                ],
-              },
+                        },
+                      }
+                    }),
+                  ],
+                },
+              ],
             },
           },
         },
+      },
 
-        fieldManager: K8sService.FIELD_MANAGER,
-      }
-    )
+      fieldManager: K8sService.FIELD_MANAGER,
+    })
 
-    const service = await this.k8sService.k8sApi.createNamespacedService({
+    await this.k8sService.k8sApi.createNamespacedService({
       namespace,
       body: {
         apiVersion: "v1",
@@ -301,8 +308,8 @@ export class ProjectService {
       }
     }
 
-    console.log("Deployment Created: ", deployment)
-    console.log("Service Created: ", service)
+    // console.log("Deployment Created: ", deployment)
+    // console.log("Service Created: ", service)
   }
 
   async updateDeployment({
@@ -443,8 +450,7 @@ export class ProjectService {
         fieldManager: K8sService.FIELD_MANAGER,
       })
 
-    const updatedService =
-      await this.k8sService.k8sApi.replaceNamespacedService({
+    await this.k8sService.k8sApi.replaceNamespacedService({
         name: serviceName,
         namespace,
         body: {
@@ -496,8 +502,43 @@ export class ProjectService {
         })
       }
     }
-    console.log("Updated existing deployment:", updatedDeploymentResponse)
-    console.log("Updated existing Service:", updatedService)
+    // console.log("Updated existing deployment:", updatedDeploymentResponse)
+    // console.log("Updated existing Service:", updatedService)
     return updatedDeploymentResponse
+  }
+
+  async deleteDeployment({
+    namespace,
+    deploymentName,
+    serviceName,
+    secretName,
+    configName,
+    ingressName,
+  }: DeleteDeploymentParams) {
+    try {
+      await this.k8sService.appsApi.readNamespacedDeployment({
+        name: deploymentName,
+        namespace,
+      })
+    } catch (err: any) {
+      if (err?.code === 404) {
+        throw new ApiError(
+          404,
+          getSystemCustomErrorMsgByKey("DEPLOYMENT_NOT_FOUND")
+        )
+      }
+      throw err
+    }
+
+    await this.k8sService.deleteIngress({ namespace, ingressName })
+
+    await this.k8sService.deleteService({ namespace, serviceName })
+
+    await this.k8sService.deleteDeployment({ namespace, deploymentName })
+
+    await Promise.all([
+      this.k8sService.deleteSecretMap({ namespace, secretName }),
+      this.k8sService.deleteConfigMap({ namespace, configName }),
+    ])
   }
 }

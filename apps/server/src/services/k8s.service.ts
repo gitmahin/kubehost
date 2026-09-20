@@ -377,4 +377,82 @@ export class K8sService {
       throw error
     }
   }
+
+  async deleteDeployment({
+  namespace,
+  deploymentName,
+}: {
+  namespace: string
+  deploymentName: string
+}) {
+  try {
+    await this.appsApi.deleteNamespacedDeployment({
+      name: deploymentName,
+      namespace,
+    })
+  } catch (error: any) {
+    if (error?.code !== 404) throw error
+  }
+}
+
+async deleteService({
+  namespace,
+  serviceName,
+}: {
+  namespace: string
+  serviceName: string
+}) {
+  try {
+    await this.k8sApi.deleteNamespacedService({
+      name: serviceName,
+      namespace,
+    })
+  } catch (error: any) {
+    if (error?.code !== 404) throw error
+  }
+}
+
+async deleteSecretMap({
+  namespace,
+  secretName,
+}: Omit<CreateSecretMapParams, "secretEnvs">) {
+  try {
+    await this.k8sApi.deleteNamespacedSecret({
+      name: secretName,
+      namespace,
+    })
+  } catch (error: any) {
+    if (error?.code !== 404) throw error
+  }
+}
+
+async deleteConfigMap({
+  namespace,
+  configName,
+}: Omit<CreateConfigMapParams, "nonSecretEnvs">) {
+  try {
+    await this.k8sApi.deleteNamespacedConfigMap({
+      name: configName,
+      namespace,
+    })
+  } catch (error: any) {
+    if (error?.code !== 404) throw error
+  }
+}
+
+async deleteIngress({
+  namespace,
+  ingressName,
+}: Pick<CreateIngressParams, "namespace" | "ingressName">) {
+  try {
+    await this.networkingApi.deleteNamespacedIngress({
+      name: ingressName,
+      namespace,
+    })
+  } catch (error: any) {
+    if (error?.code !== 404) throw error
+  }
+}
+
+
 }

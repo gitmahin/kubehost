@@ -84,6 +84,11 @@ export class ProjectZSchema extends ZodBase {
       nonSecretEnvs: this.envMapDataSchema,
     })
     .superRefine(this.hostRequiredForPublic)
+
+  static deleteDeploymentSchema = z.object({
+    project_name: this.projectName,
+    deployment_name: this.deploymentName,
+  })
 }
 
 export type ProjectNameInputType = z.infer<typeof ProjectZSchema.projectName>
@@ -94,4 +99,8 @@ export type ApplicationCreateInputType = z.infer<
 
 export type ApplicationCreateServerInputType = z.infer<
   typeof ProjectZSchema.applicationDeploymentServerSchema
+>
+
+export type DeleteDeploymentInputType = z.infer<
+  typeof ProjectZSchema.deleteDeploymentSchema
 >

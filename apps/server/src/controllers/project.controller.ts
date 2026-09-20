@@ -5,6 +5,7 @@ import { inject, injectable } from "inversify"
 import {
   ProjectInputValidators,
   type ApplicationCreateServerInputType,
+  type DeleteDeploymentInputType,
 } from "@repo/zod"
 import { isZodError, validationError } from "@/utils"
 
@@ -50,7 +51,7 @@ export class ProjectController {
       secretEnvs,
     } = parsedPayload
 
-   await  this.projectService.createDeployment({
+    await this.projectService.createDeployment({
       namespace: projectName,
       deploymentName: deploymentName,
       containerName: containerName,
@@ -119,12 +120,37 @@ export class ProjectController {
 
   async getAllDeploymentsHandler(req: Request, res: Response) {
     const { project } = req.query as { project: string }
-    const response = await this.projectService.getDeployments(project)
+
+    const parsedProjectName =
+      this.projectInputValidators.projectNameInput(project)
+    if (isZodError(parsedProjectName)) throw validationError(parsedProjectName)
+
+    const response = await this.projectService.getDeployments(parsedProjectName)
     return res.status(200).json(new ApiResponse(200, "OK", response))
   }
 
   async getPorjectsHandler(req: Request, res: Response) {
     const repsonse = await this.projectService.getProjectNames()
     return res.status(200).json(new ApiResponse(200, "Ok", repsonse))
+  }
+
+  async deleteDeploymentHandler(req: Request, res: Response) {
+    const payload = req.params as DeleteDeploymentInputType
+
+    const parsePayload =
+      this.projectInputValidators.deleteDeploymentInput(payload)
+    if (isZodError(parsePayload)) throw validationError(parsePayload)
+    const { deployment_name, project_name } = parsePayload
+
+    await this.projectService.deleteDeployment({
+      namespace: project_name,
+      deploymentName: deployment_name,
+      serviceName: deployment_name,
+      secretName: deployment_name,
+      configName: deployment_name,
+      ingressName: deployment_name,
+    })
+
+    return res.status(200).json(new ApiResponse(200, "Deployment Deleted"))
   }
 }
