@@ -27,8 +27,7 @@ export class ExpressServer {
           ? { ...corsOptions }
           : {
               origin: "*",
-              credentials: true,
-            }
+            } 
       )
     )
 

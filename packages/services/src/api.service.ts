@@ -11,7 +11,6 @@ export abstract class ApiService {
     this.baseURL = baseURL;
     this.axiosInstance = axios.create({
       baseURL,
-      withCredentials: true,
       headers,
     });
   }

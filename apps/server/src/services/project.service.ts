@@ -111,8 +111,24 @@ export class ProjectService {
       return {
         name: deployment.metadata?.name,
         namespace: deployment.metadata?.namespace,
-        image: container?.image,
-        containerPort: container?.ports?.[0]?.containerPort,
+
+        image: {
+          name: container?.image,
+          pullPolicy: container?.imagePullPolicy,
+        },
+
+        container: {
+          name: container?.name,
+          port: container?.ports?.[0]?.containerPort,
+          command: container?.command,
+          args: container?.args,
+          workingDir: container?.workingDir,
+        },
+
+        resources: {
+          requests: container?.resources?.requests,
+          limits: container?.resources?.limits,
+        },
 
         replicas: {
           desired: deployment.spec?.replicas ?? 0,
@@ -120,9 +136,13 @@ export class ProjectService {
           available: deployment.status?.availableReplicas ?? 0,
           updated: deployment.status?.updatedReplicas ?? 0,
         },
+
         status: availableCondition?.status === "True" ? "Running" : "Not Ready",
+
         statusMessage: availableCondition?.message,
+
         createdAt: deployment.metadata?.creationTimestamp,
+
         labels: deployment.metadata?.labels,
       }
     })
@@ -451,30 +471,30 @@ export class ProjectService {
       })
 
     await this.k8sService.k8sApi.replaceNamespacedService({
-        name: serviceName,
-        namespace,
-        body: {
-          apiVersion: "v1",
-          kind: "Service",
-          metadata: {
-            name: serviceName,
-          },
-          spec: {
-            selector: {
-              app: labelName,
-            },
-            ports: [
-              {
-                protocol: "TCP",
-                port: servicePort,
-                targetPort: containerPort,
-              },
-            ],
-          },
+      name: serviceName,
+      namespace,
+      body: {
+        apiVersion: "v1",
+        kind: "Service",
+        metadata: {
+          name: serviceName,
         },
+        spec: {
+          selector: {
+            app: labelName,
+          },
+          ports: [
+            {
+              protocol: "TCP",
+              port: servicePort,
+              targetPort: containerPort,
+            },
+          ],
+        },
+      },
 
-        fieldManager: K8sService.FIELD_MANAGER,
-      })
+      fieldManager: K8sService.FIELD_MANAGER,
+    })
 
     if (visibility == "public") {
       const existedIngress = await this.k8sService.getIngress({
