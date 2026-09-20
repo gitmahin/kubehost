@@ -136,12 +136,15 @@ export class K8sService {
     namespace,
     secretName,
   }: Omit<CreateSecretMapParams, "secretEnvs">) {
-    const response = await this.k8sApi.readNamespacedSecret({
-      name: secretName,
-      namespace,
-    })
-
-    return response
+    try {
+      return await this.k8sApi.readNamespacedSecret({
+        name: secretName,
+        namespace,
+      })
+    } catch (error: any) {
+      if (error?.code === 404) return null
+      throw error
+    }
   }
 
   async createConfigMap({
@@ -193,12 +196,15 @@ export class K8sService {
     namespace,
     configName,
   }: Omit<CreateConfigMapParams, "nonSecretEnvs">) {
-    const response = await this.k8sApi.readNamespacedConfigMap({
-      name: configName,
-      namespace,
-    })
-
-    return response
+    try {
+      return await this.k8sApi.readNamespacedConfigMap({
+        name: configName,
+        namespace,
+      })
+    } catch (error: any) {
+      if (error?.code === 404) return null
+      throw error
+    }
   }
 
   async createIngress({
@@ -225,6 +231,10 @@ export class K8sService {
       }
     }
 
+    const normalizedPath = path.replace(/\/$/, "")
+    const ingressPath =
+      normalizedPath === "" ? "/(.*)" : `${normalizedPath}/(.*)`
+
     await this.networkingApi.createNamespacedIngress({
       namespace,
       body: {
@@ -234,18 +244,21 @@ export class K8sService {
           name: ingressName,
           namespace,
           annotations: {
-            "nginx.ingress.kubernetes.io/rewrite-target": "/",
+            "kubernetes.io/ingress.class": "nginx",
+            "nginx.ingress.kubernetes.io/use-regex": "true",
+            "nginx.ingress.kubernetes.io/rewrite-target": "/$1",
           },
         },
         spec: {
+          ingressClassName: "nginx",
           rules: [
             {
               host,
               http: {
                 paths: [
                   {
-                    path,
-                    pathType: "Prefix",
+                    path: ingressPath,
+                    pathType: "ImplementationSpecific",
                     backend: {
                       service: {
                         name: serviceName,
@@ -280,9 +293,13 @@ export class K8sService {
 
     const existingRules = existingIngress.spec?.rules ?? []
 
+    const normalizedPath = path.replace(/\/$/, "")
+    const ingressPath =
+      normalizedPath === "" ? "/(.*)" : `${normalizedPath}/(.*)`
+
     const newPathEntry = {
-      path,
-      pathType: "Prefix",
+      path: ingressPath,
+      pathType: "ImplementationSpecific",
       backend: {
         service: {
           name: serviceName,
@@ -350,9 +367,14 @@ export class K8sService {
     ingressName,
     namespace,
   }: Pick<CreateIngressParams, "namespace" | "ingressName">) {
-    return await this.networkingApi.readNamespacedIngress({
-      name: ingressName,
-      namespace,
-    })
+    try {
+      return await this.networkingApi.readNamespacedIngress({
+        name: ingressName,
+        namespace,
+      })
+    } catch (error: any) {
+      if (error?.code === 404) return null
+      throw error
+    }
   }
 }

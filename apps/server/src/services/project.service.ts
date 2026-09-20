@@ -476,7 +476,7 @@ export class ProjectService {
         namespace,
       })
 
-      if (existedIngress.metadata?.name) {
+      if (existedIngress) {
         await this.k8sService.updateIngress({
           host,
           ingressName,
