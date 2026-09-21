@@ -2,6 +2,8 @@
 
 **A deployment platform for your apps - like a cloud provider, but self-hosted.**
 
+Just provide your Docker image - kubehost handles networking, load balancing and HA complexities behind the scenes.
+
 We've all been there: it's a hackathon, your app is ready, and now you're
 burning your last hours setting up a server just to make it live. KubeHost
 solves that.
