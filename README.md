@@ -11,7 +11,8 @@ solves that.
 Give it a Docker image and a domain, and your app is live. That's it.
 (Built on top of Kubernetes)
 
-> ⚠️ **Not for production.** KubeHost is meant for demos, hackathons, and
+> [!WARNING]
+> **Not for production.** KubeHost is meant for demos, hackathons, and
 > competition projects - a quick, temporary way to get something live.
 > It's not built or hardened for hosting real, production applications.
 
@@ -50,6 +51,12 @@ curl -sSL https://raw.githubusercontent.com/gitmahin/kubehost/main/install.sh | 
 See all commands:
 ```bash
 kubehost --help
+```
+> [!WARNING]
+> Before starting, grant your user permission to run Docker commands without sudo.
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
 ```
 
 Start it:
