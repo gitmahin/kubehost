@@ -7,7 +7,7 @@
     "dev": "vite dev --port 3000",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node .output/server/index.mjs",
+    "start": "NITRO_PUBLIC_API_SERVER_URL='http://localhost:5000/api' node .output/server/index.mjs",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"

@@ -6,8 +6,11 @@ import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite";
 
 const config = defineConfig({
-  resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact(),     nitro()],
+  resolve: { 
+    tsconfigPaths: true,
+    dedupe: ["react", "react-dom"]
+  },
+  plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact(), nitro()],
 })
 
 export default config
