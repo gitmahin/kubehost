@@ -40,10 +40,9 @@ done
 
 # Display Help Information
 printHelp() {
-    echo "=========================================="
-    echo "           KUBEHOST CLI TOOL              "
-    echo "=========================================="
-    echo "A Bash-based CLI tool for automated Kubernetes/Docker deployments."
+
+    echo "KUBEHOST CLI TOOL"
+    echo "A Bash-based CLI tool for automated Depoylment Infrastructure setup."
     echo ""
     echo "Usage: kubehost [OPTIONS]"
     echo ""
@@ -143,7 +142,7 @@ createContainers() {
     -p 3001:3000 \
     --name kubehost-client \
     --network minikube \
-    -e VITE_API_SERVER_URL="$apiServerUrl" \
+    -e NITRO_PUBLIC_API_SERVER_URL="$apiServerUrl" \
     dockermahin/kubehost-client:latest 
 
   if minikube addons list | grep -q "| ingress .*| enabled ✅"; then
