@@ -1,8 +1,12 @@
-Package: kubehost
-Version: 26.0.0
+Source: kubehost
 Section: utils
 Priority: optional
-Architecture: all
 Maintainer: Nimul Islam Mahin <nimulmahin@gmail.com>
-Description: Automated networking and container orchestration CLI tool for kubehost.
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
 
+Package: kubehost
+Architecture: all
+Depends: ${misc:Depends}, bash, docker.io | docker-ce
+Description: Automated networking and container orchestration CLI tool.
+  KubeHost lets you deploy containerized apps in seconds without YAML manifests.

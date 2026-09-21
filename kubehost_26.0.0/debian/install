@@ -1,1 +1,1 @@
-usr/local/bin/kubehost usr/local/bin/
+usr/local/bin/kubehost/scripts.sh usr/bin/kubehost
