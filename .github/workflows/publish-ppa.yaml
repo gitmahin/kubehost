@@ -48,7 +48,7 @@ jobs:
 
       - name: Bootstrap sbuild chroot + test build
         run: |
-          sbuild -d "${{ matrix.series }}" ../${PKG_NAME}_*.dsc
+          sudo sbuild-adduser runner && sbuild -d "${{ matrix.series }}" ../${PKG_NAME}_*.dsc
 
       - name: Show lintian output on failure
         if: failure()
