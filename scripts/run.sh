@@ -37,3 +37,11 @@ docker run -d \
   dockermahin/kubehost-server:latest
 
 docker run -p 3001:3000 --name kubehost-client --network minikube dockermahin/kubehost-client:latest 
+
+minikube addons enable ingress
+
+# Allow binding to ports down to 80 without root
+sudo sysctl net.ipv4.ip_unprivileged_port_start=80
+
+# Now run port-forward as normal ubuntu user
+nohup minikube kubectl -- port-forward --address 0.0.0.0 -n ingress-nginx service/ingress-nginx-controller 80:80 > port-forward.log 2>&1 &
