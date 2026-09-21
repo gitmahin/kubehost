@@ -4,6 +4,8 @@
 
 Just provide your Docker image - kubehost handles networking, load balancing and HA complexities behind the scenes.
 
+![alt text](image.png)
+
 We've all been there: it's a hackathon, your app is ready, and now you're
 burning your last hours setting up a server just to make it live. KubeHost
 solves that.
