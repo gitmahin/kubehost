@@ -7,6 +7,6 @@ Standards-Version: 4.6.2
 
 Package: kubehost
 Architecture: all
-Depends: ${misc:Depends}, bash, docker.io | docker-ce
+Depends: ${misc:Depends}, docker.io | docker-ce
 Description: Automated networking and container orchestration CLI tool.
-  KubeHost lets you deploy containerized apps in seconds without YAML manifests.
+ KubeHost lets you deploy containerized apps in seconds without YAML manifests.

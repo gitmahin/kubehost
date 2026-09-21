@@ -1,0 +1,130 @@
+name: Build & Publish kubehost PPA package
+on:
+  workflow_dispatch: {}
+
+env:
+  PKG_DIR: kubehost_26.0.0
+  PKG_NAME: kubehost
+  UPSTREAM_VERSION: "26.0.0"
+
+jobs:
+  build-and-test:
+    name: Build + lintian (${{ matrix.series }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        series: [jammy, noble, resolute]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y devscripts debhelper sbuild mmdebstrap uidmap lintian
+
+      - name: Build orig tarball
+        run: |
+          cp -r "$PKG_DIR" /tmp/"$PKG_DIR"
+          rm -rf /tmp/"$PKG_DIR"/debian
+          tar czf "${PKG_NAME}_${UPSTREAM_VERSION}.orig.tar.gz" -C /tmp "$PKG_DIR"
+
+      - name: Bump changelog for this series (unsigned, CI-local revision)
+        run: |
+          cd "$PKG_DIR"
+          export DEBFULLNAME="kubehost CI"
+          export DEBEMAIL="ci@kubehost.invalid"
+          rev="${{ github.run_number }}"
+          dch -v "${UPSTREAM_VERSION}-ci${rev}~${{ matrix.series }}1" \
+              -D "${{ matrix.series }}" \
+              "CI build for ${{ matrix.series }} (run ${{ github.run_number }})"
+
+      - name: Build source package (unsigned)
+        run: |
+          cd "$PKG_DIR"
+          debuild -S -us -uc
+
+      - name: Bootstrap sbuild chroot + test build
+        run: |
+          sbuild -d "${{ matrix.series }}" ../${PKG_NAME}_*.dsc
+
+      - name: Show lintian output on failure
+        if: failure()
+        run: cat *.build || true
+
+      - name: Upload built .deb as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubehost-${{ matrix.series }}-deb
+          path: "*.deb"
+          if-no-files-found: warn
+
+  publish-to-ppa:
+    name: Publish to Launchpad PPA (${{ matrix.series }})
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        series: [jammy, noble, resolute]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y devscripts debhelper dput gnupg
+
+      - name: Import signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          gpgconf --kill gpg-agent
+
+      - name: Configure dput
+        run: |
+          cat > ~/.dput.cf << 'EOF'
+          [kubehost-ppa]
+          fqdn = ppa.launchpad.net
+          method = ftp
+          incoming = ~ubuntumahin/ubuntu/kubehost/
+          login = anonymous
+          allow_unsigned_uploads = 0
+          EOF
+
+      - name: Build orig tarball
+        run: |
+          cp -r "$PKG_DIR" /tmp/"$PKG_DIR"
+          rm -rf /tmp/"$PKG_DIR"/debian
+          tar czf "${PKG_NAME}_${UPSTREAM_VERSION}.orig.tar.gz" -C /tmp "$PKG_DIR"
+
+      - name: Set changelog version from tag
+        run: |
+          cd "$PKG_DIR"
+          export DEBFULLNAME="Nimul Islam Mahin"
+          export DEBEMAIL="nimulmahin@gmail.com"
+          # tag like v26.0.0-15 -> revision "15"; fallback to run number
+          tag="${GITHUB_REF#refs/tags/v}"
+          dch -v "${tag}~${{ matrix.series }}1" \
+              -D "${{ matrix.series }}" \
+              "Release ${tag} for ${{ matrix.series }}"
+
+      - name: Build signed source package
+        env:
+          GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
+        run: |
+          cd "$PKG_DIR"
+          debuild -S -sa -p"gpg --batch --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE}"
+
+      - name: Upload to Launchpad PPA
+        run: dput kubehost-ppa ${PKG_NAME}_*.changes

@@ -1,6 +1,66 @@
+kubehost (26.0.0-14) resolute; urgency=medium
+
+  * Build for resolute
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:43:58 +0600
+
+kubehost (26.0.0-13) noble; urgency=medium
+
+  * Build for noble
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:42:09 +0600
+
+kubehost (26.0.0-12) jammy; urgency=medium
+
+  * Build for jammy
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:40:19 +0600
+
+kubehost (26.0.0-11) resolute; urgency=medium
+
+  * Build for resolute
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:34:53 +0600
+
+kubehost (26.0.0-10) noble; urgency=medium
+
+  * Build for noble
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:32:54 +0600
+
+kubehost (26.0.0-9) jammy; urgency=medium
+
+  * Build for jammy
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:31:20 +0600
+
+kubehost (26.0.0-8) resolute; urgency=medium
+
+  * Build for resolute
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:15:37 +0600
+
+kubehost (26.0.0-8) resolute; urgency=medium
+
+  * Build for resolute
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:15:31 +0600
+
+kubehost (26.0.0-7) noble; urgency=medium
+
+  * Build for noble
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:15:31 +0600
+
+kubehost (26.0.0-6) jammy; urgency=medium
+
+  * Build for jammy
+
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:15:31 +0600
+
 kubehost (26.0.0-6) resolute; urgency=medium
 
   * Target resolute Ubuntu series for PPA compatibility.
   * Corrected debian/install path and control dependencies.
 
- -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 16:50:00 +0000
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 17:15:17 +0600

@@ -16,3 +16,35 @@ todos.json
 
 # typescript
 *.tsbuildinfo
+
+# Debian / Ubuntu PPA packaging artifacts
+# generated source/binary package files
+kubehost_*.orig.tar.gz
+kubehost_*.orig.tar.*
+kubehost_*.debian.tar.*
+kubehost_*.tar.gz
+kubehost_*.tar.xz
+kubehost_*.dsc
+kubehost_*.build
+kubehost_*.buildinfo
+kubehost_*.changes
+kubehost_*.deb
+kubehost_*.ddeb
+kubehost_*.upload
+kubehost_*.ppa.upload
+ 
+# debhelper build-time junk left inside debian/
+kubehost_26.0.0/debian/*.debhelper
+kubehost_26.0.0/debian/*.debhelper.log
+kubehost_26.0.0/debian/*.substvars
+kubehost_26.0.0/debian/files
+kubehost_26.0.0/debian/.debhelper/
+kubehost_26.0.0/debian/kubehost/
+kubehost_26.0.0/debian/tmp/
+ 
+# local build/test scratch directories
+kubehost-build/
+/tmp/kubehost_26.0.0/
+ 
+# sbuild / chroot caches
+*.sbuild.*
