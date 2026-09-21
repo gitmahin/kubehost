@@ -83,9 +83,9 @@ function RouteComponent() {
     control,
     name: "envVars",
   })
-const projectService = new ProjectService(
-  getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
-)
+  const projectService = new ProjectService(
+    getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+  )
   // Mutation to send structured deployment data to server
   const createDeploymentMutation = useMutation({
     mutationFn: async (payload: ApplicationCreateServerInputType) => {

@@ -59,9 +59,9 @@ export const Sidebar = () => {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-const projectService = new ProjectService(
- getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
-)
+  const projectService = new ProjectService(
+    getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+  )
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
@@ -75,8 +75,10 @@ const projectService = new ProjectService(
 
   return (
     <aside className="sticky top-0 left-0 flex h-screen w-[250px] shrink-0 flex-col border-r">
-      <div className="flex items-center gap-2 px-5 py-5 ">
-        <Link to="/"><Kubernetes className="h-6 w-6 shrink-0"  /></Link>
+      <div className="flex items-center gap-2 px-5 py-5">
+        <Link to="/">
+          <Kubernetes className="h-6 w-6 shrink-0" />
+        </Link>
         <div className="flex flex-col leading-tight">
           <span className="text-base font-semibold">KubeHost</span>
           <span className="text-xs text-gray-400">{APP_VERSION}</span>

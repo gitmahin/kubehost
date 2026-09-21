@@ -11,7 +11,7 @@ enum SYSTEM_CUSTOM_ERROR_EVENTS {
   DEPLOYMENT_ALREADY_EXISTS = "DEPLOYMENT_ALREADY_EXISTS",
 
   DEPLOYMENT_NOT_FOUND = "DEPLOYMENT_NOT_FOUND",
-    NAMESPACE_NOT_FOUND = "NAMESPACE_NOT_FOUND",
+  NAMESPACE_NOT_FOUND = "NAMESPACE_NOT_FOUND",
 }
 
 export const SystemCustomErrorCode: Record<SYSTEM_CUSTOM_ERROR_EVENTS, string> =
@@ -27,7 +27,7 @@ export const SystemCustomErrorCode: Record<SYSTEM_CUSTOM_ERROR_EVENTS, string> =
     DEPLOYMENT_ALREADY_EXISTS: "40903",
 
     DEPLOYMENT_NOT_FOUND: "40401",
-        NAMESPACE_NOT_FOUND: "40402",
+    NAMESPACE_NOT_FOUND: "40402",
   }
 
 export type SystemCustomErrorMessageDataType = {
@@ -96,7 +96,7 @@ export const SystemCustomErrorMsgByCode: SystemCustomErrorMessageType = {
     message: "No deployment with this name exists in the namespace.",
     code: SystemCustomErrorCode.DEPLOYMENT_NOT_FOUND,
   },
-    [SystemCustomErrorCode.NAMESPACE_NOT_FOUND]: {
+  [SystemCustomErrorCode.NAMESPACE_NOT_FOUND]: {
     title: "Project Not Found",
     message: "No project with this name exists.",
     code: SystemCustomErrorCode.NAMESPACE_NOT_FOUND,

@@ -25,8 +25,8 @@ export const ProjectSidebar = ({
   const navigate = useNavigate()
 
   const projectService = new ProjectService(
-  getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
-)
+    getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+  )
 
   const { data: deployments = [], isLoading } = useQuery({
     queryKey: ["deployments", project_id],

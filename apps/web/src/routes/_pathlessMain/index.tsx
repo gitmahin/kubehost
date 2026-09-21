@@ -29,7 +29,6 @@ function RouteComponent() {
 
   return (
     <div className="mx-auto max-w-7xl flex-1 space-y-6 p-6 md:p-8">
-
       {/* Main Hero Empty State */}
       <Card className="border-dashed bg-gradient-to-b from-card to-muted/20">
         <CardContent className="flex flex-col items-center justify-center px-4 py-16 text-center">
@@ -46,7 +45,6 @@ function RouteComponent() {
           </CardDescription>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            
             <Button
               variant="outline"
               size="lg"
@@ -85,8 +83,8 @@ function RouteComponent() {
               Automated Networking
             </CardTitle>
             <CardDescription>
-              Load balancing and ingress routes are
-              provisioned and configured automatically.
+              Load balancing and ingress routes are provisioned and configured
+              automatically.
             </CardDescription>
           </CardHeader>
         </Card>

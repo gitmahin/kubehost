@@ -33,8 +33,8 @@ type Domain = {
 
 function RouteComponent() {
   const projectService = new ProjectService(
- getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
-)
+    getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+  )
   const {
     data: domains = [],
     isLoading,

@@ -1,8 +1,8 @@
-
 export function injectRuntimeEnv() {
   const runtimeEnv = {
-    VITE_API_SERVER_URL: process.env.VITE_API_SERVER_URL || 'http://localhost:3000',
-  };
+    VITE_API_SERVER_URL:
+      process.env.VITE_API_SERVER_URL || "http://localhost:3000",
+  }
 
   return (
     <script
@@ -10,5 +10,5 @@ export function injectRuntimeEnv() {
         __html: `window.__ENV__ = ${JSON.stringify(runtimeEnv)};`,
       }}
     />
-  );
+  )
 }

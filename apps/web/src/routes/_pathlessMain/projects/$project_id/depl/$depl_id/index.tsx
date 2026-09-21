@@ -67,7 +67,6 @@ export const Route = createFileRoute(
   component: RouteComponent,
 })
 
-
 type Pod = {
   name?: string
   status?: string
@@ -147,8 +146,8 @@ const restartChartConfig = {
 
 function RouteComponent() {
   const projectService = new ProjectService(
-getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
-)
+    getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+  )
   const { project_id, depl_id } = Route.useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -464,90 +463,90 @@ getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
       </div>
 
       {/* Analytics & Charts Section (Wrapped in ClientOnly to fix Hydration Error #419) */}
-  
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card className="border-zinc-800 bg-zinc-900/40">
-            <CardHeader>
-              <CardTitle className="text-base text-zinc-100">
-                Replica Health Distribution
-              </CardTitle>
-              <CardDescription className="text-xs text-zinc-500">
-                Ratio of ready vs unready pod instances
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[220px]">
-              <ChartContainer
-                config={replicaChartConfig}
-                className="h-full w-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-  <Pie
-    data={replicaData}
-    dataKey="value"
-    nameKey="name"
-    cx="50%"
-    cy="50%"
-    innerRadius={50}
-    outerRadius={80}
-    paddingAngle={4}
 
-    shape={(props: any) => {
-      const { fill, payload, ...sectorProps } = props
-      return <Sector {...sectorProps} fill={payload?.fill || fill} />
-    }}
-  />
-                    <RechartsTooltip content={<ChartTooltipContent />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card className="border-zinc-800 bg-zinc-900/40">
+          <CardHeader>
+            <CardTitle className="text-base text-zinc-100">
+              Replica Health Distribution
+            </CardTitle>
+            <CardDescription className="text-xs text-zinc-500">
+              Ratio of ready vs unready pod instances
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[220px]">
+            <ChartContainer
+              config={replicaChartConfig}
+              className="h-full w-full"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={replicaData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={4}
+                    shape={(props: any) => {
+                      const { fill, payload, ...sectorProps } = props
+                      return (
+                        <Sector {...sectorProps} fill={payload?.fill || fill} />
+                      )
+                    }}
+                  />
+                  <RechartsTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
 
-          <Card className="border-zinc-800 bg-zinc-900/40">
-            <CardHeader>
-              <CardTitle className="text-base text-zinc-100">
-                Pod Restarts
-              </CardTitle>
-              <CardDescription className="text-xs text-zinc-500">
-                Total restart counts across active pods
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[220px]">
-              <ChartContainer
-                config={restartChartConfig}
-                className="h-full w-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={podRestartData}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                  >
-                    <XAxis
-                      dataKey="name"
-                      stroke="#71717a"
-                      fontSize={11}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      stroke="#71717a"
-                      fontSize={11}
-                      tickLine={false}
-                      allowDecimals={false}
-                    />
-                    <RechartsTooltip content={<ChartTooltipContent />} />
-                    <Bar
-                      dataKey="restarts"
-                      fill="#3b82f6"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
-    
+        <Card className="border-zinc-800 bg-zinc-900/40">
+          <CardHeader>
+            <CardTitle className="text-base text-zinc-100">
+              Pod Restarts
+            </CardTitle>
+            <CardDescription className="text-xs text-zinc-500">
+              Total restart counts across active pods
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[220px]">
+            <ChartContainer
+              config={restartChartConfig}
+              className="h-full w-full"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={podRestartData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="name"
+                    stroke="#71717a"
+                    fontSize={11}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    stroke="#71717a"
+                    fontSize={11}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <RechartsTooltip content={<ChartTooltipContent />} />
+                  <Bar
+                    dataKey="restarts"
+                    fill="#3b82f6"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Pod Instances Table */}
       <Card className="border-zinc-800 bg-zinc-900/40">

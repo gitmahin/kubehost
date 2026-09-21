@@ -23,9 +23,9 @@ function RouteComponent() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [projectName, setProjectName] = useState("")
-const projectService = new ProjectService(
-  getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
-)
+  const projectService = new ProjectService(
+    getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+  )
   const createProjectMutation = useMutation({
     mutationFn: async (name: string) => {
       const toastId = toast.loading("Creating project...")

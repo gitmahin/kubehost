@@ -1,12 +1,6 @@
 import { useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import {
-  Rocket,
-  Plus,
-  HelpCircle,
-  Trash2,
-  Loader2,
-} from "lucide-react"
+import { Rocket, Plus, HelpCircle, Trash2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -68,13 +62,12 @@ function RouteComponent() {
 
       // Option 1A: Navigate to deployments then reload
       await navigate({ to: "/" })
-     
     } catch (error: any) {
       // 5. Update toast to error
       toast.error(
         error?.response?.data?.message ||
-        error?.message ||
-        `Failed to delete project "${project_id}".`,
+          error?.message ||
+          `Failed to delete project "${project_id}".`,
         { id: toastId }
       )
     } finally {
@@ -103,8 +96,7 @@ function RouteComponent() {
 
         <div className="flex items-center gap-3">
           <a href="https://github.com/gitmahin/kubehost/blob/main/README.md">
-
-            <Button variant="outline" size="sm" >
+            <Button variant="outline" size="sm">
               <HelpCircle className="mr-2 h-4 w-4" />
               Documentation
             </Button>
@@ -124,8 +116,9 @@ function RouteComponent() {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. This will permanently delete the
-                  project <strong className="text-foreground">{project_id}</strong>{" "}
-                  and remove all associated deployments and resources.
+                  project{" "}
+                  <strong className="text-foreground">{project_id}</strong> and
+                  remove all associated deployments and resources.
                 </AlertDialogDescription>
               </AlertDialogHeader>
 
@@ -139,7 +132,7 @@ function RouteComponent() {
                     handleDeleteProject()
                   }}
                   disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
                 >
                   {isDeleting ? (
                     <>

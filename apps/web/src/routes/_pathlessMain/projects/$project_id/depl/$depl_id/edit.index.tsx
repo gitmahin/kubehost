@@ -50,8 +50,8 @@ export type SecretMapDataType = {
 
 function RouteComponent() {
   const projectService = new ProjectService(
-getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
-)
+    getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+  )
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { project_id: projectId, depl_id: deplId } = Route.useParams()
