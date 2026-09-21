@@ -1,21 +1,89 @@
-# shadcn/ui monorepo template
+# KubeHost
 
-This is a TanStack Start monorepo template with shadcn/ui.
+**A deployment platform for your apps - like a cloud provider, but self-hosted.**
 
-## Adding components
+We've all been there: it's a hackathon, your app is ready, and now you're
+burning your last hours setting up a server just to make it live. KubeHost
+solves that.
 
-To add components to your app, run the following command at the root of your `web` app:
+Give it a Docker image and a domain, and your app is live. That's it.
+(Built on top of Kubernetes)
+
+> ⚠️ **Not for production.** KubeHost is meant for demos, hackathons, and
+> competition projects - a quick, temporary way to get something live.
+> It's not built or hardened for hosting real, production applications.
+
+## How it works
+
+1. Create a project
+2. Create a deployment
+3. Give it your Docker image
+4. Add a domain
+5. Point your domain's DNS to your VPS's public IP
+
+Your app is now live. You can also route paths like `example.com/api` to a
+specific deployment.
+
+## Connecting services to each other (e.g. a database)
+
+Don't use `localhost` to connect one deployment to another - use the
+**deployment's name** as the host instead.
+
+Example: if your database deployment is named `my-database`, set
+`DB_HOST=my-database` in your app - not `localhost`, not an IP.
+
+## Requirements
+
+Install these on your VPS (or local machine) before using KubeHost:
+
+- **Docker** - https://docs.docker.com/engine/install/
+- **Minikube** - https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download
+
+## Install (on a VPS)
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+curl -sSL https://raw.githubusercontent.com/gitmahin/kubehost/main/install.sh | sudo bash
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/button";
+See all commands:
+```bash
+kubehost --help
 ```
+
+Start it:
+```bash
+kubehost --api-server http://<your_domain>:3000/api
+```
+> Port `3000` is required - that's where the API server listens.
+
+Don't worry about port conflicts between your deployments - even if two
+services use the same port, KubeHost routes them correctly on its own.
+
+### Open these ports (e.g. AWS EC2 security group)
+
+| Type | Port | Source    |
+|------|------|-----------|
+| TCP  | 3000 | 0.0.0.0/0 |
+| TCP  | 3001 | 0.0.0.0/0 |
+| TCP  | 80   | 0.0.0.0/0 |
+
+## Running locally
+
+**Linux:**
+```bash
+kubehost --api-server http://localhost:3000/api
+```
+Locally you have to provide localhost here
+But rest is same as Production deployment
+
+**Windows:** the CLI requires Linux, so clone and run it manually instead:
+```bash
+git clone https://github.com/gitmahin/kubehost.git
+cd kubehost
+pnpm install
+pnpm dev
+```
+
+---
+
+Happy deploying! 🚀

@@ -85,7 +85,7 @@ function RouteComponent() {
               Automated Networking
             </CardTitle>
             <CardDescription>
-              Load balancing, ingress routes, and SSL certificates are
+              Load balancing and ingress routes are
               provisioned and configured automatically.
             </CardDescription>
           </CardHeader>
