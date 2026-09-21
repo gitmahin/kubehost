@@ -1,24 +1,37 @@
+import { useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
   Rocket,
   Plus,
-  Layers,
-  Cpu,
-  ShieldCheck,
-  ArrowRight,
-  ExternalLink,
   HelpCircle,
+  Trash2,
+  Loader2,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import {
   Button,
   Card,
   CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
   Badge,
 } from "@workspace/ui/components"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog"
+
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
+import { useQueryClient } from "@tanstack/react-query"
 
 export const Route = createFileRoute("/_pathlessMain/projects/$project_id/")({
   component: RouteComponent,
@@ -27,6 +40,47 @@ export const Route = createFileRoute("/_pathlessMain/projects/$project_id/")({
 function RouteComponent() {
   const navigate = useNavigate()
   const { project_id } = Route.useParams()
+  const queryClient = useQueryClient()
+
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  const projectService = new ProjectService(
+    getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+  )
+  const handleDeleteProject = async () => {
+    // 1. Trigger Sonner loading toast
+    const toastId = toast.loading(`Deleting project "${project_id}"...`)
+    setIsDeleting(true)
+
+    try {
+      // 2. Call the service method
+      await projectService.deleteProject(project_id)
+
+      // 3. Update toast to success
+      toast.success(`Project "${project_id}" deleted successfully!`, {
+        id: toastId,
+      })
+
+      setDialogOpen(false)
+      await queryClient.invalidateQueries({ queryKey: ["projects"] })
+      await queryClient.invalidateQueries({ queryKey: ["deployments"] })
+
+      // Option 1A: Navigate to deployments then reload
+      await navigate({ to: "/" })
+     
+    } catch (error: any) {
+      // 5. Update toast to error
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        `Failed to delete project "${project_id}".`,
+        { id: toastId }
+      )
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <div className="mx-auto max-w-7xl flex-1 space-y-6 p-6 md:p-8">
@@ -46,11 +100,59 @@ function RouteComponent() {
             overhead.
           </p>
         </div>
+
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <HelpCircle className="mr-2 h-4 w-4" />
-            Documentation
-          </Button>
+          <a href="https://github.com/gitmahin/kubehost/blob/main/README.md">
+
+            <Button variant="outline" size="sm" >
+              <HelpCircle className="mr-2 h-4 w-4" />
+              Documentation
+            </Button>
+          </a>
+
+          {/* Delete Project Alert Dialog */}
+          <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <AlertDialogTrigger>
+              <Button variant="destructive" size="sm">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Project
+              </Button>
+            </AlertDialogTrigger>
+
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the
+                  project <strong className="text-foreground">{project_id}</strong>{" "}
+                  and remove all associated deployments and resources.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleDeleteProject()
+                  }}
+                  disabled={isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Project"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -100,8 +202,6 @@ function RouteComponent() {
           </div>
         </CardContent>
       </Card>
-
-
     </div>
   )
 }

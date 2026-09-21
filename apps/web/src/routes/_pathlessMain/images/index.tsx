@@ -60,6 +60,8 @@ export function RouteComponent() {
         res?.data ??
         []) as Deployment[]
     },
+    refetchInterval: 4000,
+    refetchIntervalInBackground: true,
   })
 
   const columns: ColumnDef<Deployment>[] = [
@@ -95,7 +97,7 @@ export function RouteComponent() {
     getCoreRowModel: getCoreRowModel(),
   })
 
-  const isTableLoading = isLoading || isFetching
+  const isTableLoading = isLoading
 
   if (!isTableLoading && deployments.length === 0) {
     return <EmptyDeployment />

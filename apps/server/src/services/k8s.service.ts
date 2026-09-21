@@ -317,13 +317,15 @@ export class K8sService {
 
     const existingRules = existingIngress.spec?.rules ?? []
 
-    const normalizedPath = path.replace(/\/$/, "")
+    const normalizedPath =
+      !path || path === "/" ? "/" : path.replace(/\/+$/, "")
+
     const ingressPath =
-      normalizedPath === "" ? "/(.*)" : `${normalizedPath}/(.*)`
+      normalizedPath === "/" ? "/(.*)" : `${normalizedPath}/(.*)`
 
     const newPathEntry = {
       path: ingressPath,
-      pathType: "ImplementationSpecific",
+      pathType: "ImplementationSpecific" as const,
       backend: {
         service: {
           name: serviceName,
@@ -334,37 +336,40 @@ export class K8sService {
       },
     }
 
+    // Find the host
     const hostRuleIndex = existingRules.findIndex((rule) => rule.host === host)
 
-    let updatedRules
+    let updatedRules: typeof existingRules
 
-    if (hostRuleIndex >= 0) {
-      const existingPaths = existingRules[hostRuleIndex]?.http?.paths ?? []
-
-      const pathMatchIndex = existingPaths.findIndex((p) => p.path === path)
-
-      const mergedPaths =
-        pathMatchIndex >= 0
-          ? existingPaths.map((p, i) =>
-              i === pathMatchIndex ? newPathEntry : p
-            )
-          : [...existingPaths, newPathEntry]
-
-      updatedRules = existingRules.map((rule, i) =>
-        i === hostRuleIndex ? { ...rule, http: { paths: mergedPaths } } : rule
+    if (hostRuleIndex !== -1) {
+      // Host already exists.
+      // Replace its path completely.
+      updatedRules = existingRules.map((rule, index) =>
+        index === hostRuleIndex
+          ? {
+              ...rule,
+              http: {
+                ...rule.http,
+                paths: [newPathEntry],
+              },
+            }
+          : rule
       )
     } else {
-      // add a brand-new rule with just this one path if new host
+      // Host doesn't exist.
+      // Create a new host with exactly one path.
       updatedRules = [
         ...existingRules,
         {
           host,
-          http: { paths: [newPathEntry] },
+          http: {
+            paths: [newPathEntry],
+          },
         },
       ]
     }
 
-    const response = await this.networkingApi.replaceNamespacedIngress({
+    return await this.networkingApi.replaceNamespacedIngress({
       name: ingressName,
       namespace,
       body: {
@@ -383,8 +388,6 @@ export class K8sService {
       },
       fieldManager: K8sService.FIELD_MANAGER,
     })
-
-    return response
   }
 
   async getIngress({

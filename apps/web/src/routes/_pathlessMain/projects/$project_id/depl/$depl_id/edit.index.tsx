@@ -103,6 +103,7 @@ getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
 
   // Pre-fill form when deployment data is fetched
   useEffect(() => {
+    console.log(deploymentData)
     if (deploymentData) {
       reset({
         deploymentName: deploymentData.deploymentName ?? "",

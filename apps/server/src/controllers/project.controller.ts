@@ -29,6 +29,17 @@ export class ProjectController {
     return res.status(200).json(new ApiResponse(200, "Ok"))
   }
 
+  async deleteProjectHandler(req: Request, res: Response) {
+    const { project_name } = req.body
+
+    const parsedProjectName =
+      this.projectInputValidators.projectNameInput(project_name)
+    if (isZodError(parsedProjectName)) throw validationError(parsedProjectName)
+
+    await this.projectService.deleteProject(parsedProjectName as string)
+    return res.status(200).json(new ApiResponse(200, "Ok"))
+  }
+
   async createDeploymentHandler(req: Request, res: Response) {
     const payload = req.body as ApplicationCreateServerInputType
 

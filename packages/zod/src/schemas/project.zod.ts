@@ -5,6 +5,7 @@ export class ProjectZSchema extends ZodBase {
   static projectName = z
     .string()
     .max(63, "Project name must be 63 characters or fewer")
+    .trim()
     .regex(
       /^[a-zA-Z0-9-]+$/,
       "Only letters, numbers, and hyphens are allowed - no spaces or special characters"
@@ -12,6 +13,7 @@ export class ProjectZSchema extends ZodBase {
 
   static deploymentName = z
     .string()
+    .trim()
     .min(1, "Deployment name is required")
     .max(70, "Deployment name must be 70 characters or fewer")
     .regex(
@@ -21,7 +23,7 @@ export class ProjectZSchema extends ZodBase {
 
   static envVarSchema = z.object({
     key: z.string().min(1, "Key is required"),
-    name: z.string().min(1, "Name is required"),
+    name: z.string().trim().min(1, "Name is required"),
     value: z.string().min(1, "Value is required"),
     isSecret: z.boolean().default(false),
   })
@@ -29,14 +31,14 @@ export class ProjectZSchema extends ZodBase {
   static envMapDataSchema = z.record(
     z.string(),
     z.object({
-      name: z.string(),
+      name: z.string().trim(),
       value: z.string(),
     })
   )
 
   static applicationBaseSchema = z.object({
-    image: z.string().min(1, "Image is required"),
-    containerName: z.string().min(1, "Container name is required"),
+    image: z.string().trim().min(1, "Image is required"),
+    containerName: z.string().trim().min(1, "Container name is required"),
     containerPort: z.coerce
       .number({ error: "Container port must be a number" })
       .int()
@@ -53,8 +55,8 @@ export class ProjectZSchema extends ZodBase {
       .min(1, "At least 1 replica is required"),
     envVars: z.array(this.envVarSchema),
     visibility: z.enum(["public", "private"]),
-    host: z.string().optional(),
-    path: z.string().optional(),
+    host: z.string().trim().optional(),
+    path: z.string().trim().optional(),
   })
 
   static hostRequiredForPublic(

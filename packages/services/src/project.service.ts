@@ -14,6 +14,10 @@ export class ProjectService extends ApiService {
     return this.post("/", { project_name: projectName })
   }
 
+
+    async deleteProject(projectName: ProjectNameInputType) {
+    return this.delete("/", { project_name: projectName })
+  }
   async listAllProjects() {
     return this.get("/")
   }

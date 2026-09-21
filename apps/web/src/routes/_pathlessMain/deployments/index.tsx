@@ -112,6 +112,8 @@ const projectService = new ProjectService(
       const res: any = await projectService.listAllProjects()
       return (res?.data.data ?? []) as Project[]
     },
+    refetchInterval: 4000,
+    refetchIntervalInBackground: true,
   })
 
   const {
@@ -126,6 +128,8 @@ const projectService = new ProjectService(
       )
       return (res?.data.data ?? []) as Deployment[]
     },
+    refetchInterval: 4000,
+    refetchIntervalInBackground: true,
   })
 
   const columns = useMemo<ColumnDef<Deployment>[]>(
@@ -225,7 +229,7 @@ const projectService = new ProjectService(
     })
   }
 
-  const isTableLoading = isLoading || isFetching
+  const isTableLoading = isLoading
 
   if (deployments.length === 0) {
     return <EmptyDeployment />

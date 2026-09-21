@@ -9,8 +9,7 @@ import { K8sService } from "./k8s.service"
 import { ApiError } from "@/libs"
 import { getSystemCustomErrorMsgByKey } from "@/events"
 import type { ApplicationCreateInputType } from "@repo/zod"
-import type { DeploymentDashboard} from "@repo/types"
-
+import type { DeploymentDashboard } from "@repo/types"
 
 export type DeploymentEditData = {
   deploymentName: string
@@ -86,6 +85,29 @@ export class ProjectService {
         },
       },
       fieldManager: K8sService.FIELD_MANAGER,
+    })
+
+    return response
+  }
+
+  async deleteProject(projectName: string) {
+    try {
+      await this.k8sService.k8sApi.readNamespace({
+        name: projectName,
+      })
+    } catch (err: any) {
+      if (err?.code === 404) {
+        throw new ApiError(
+          404,
+          getSystemCustomErrorMsgByKey("NAMESPACE_NOT_FOUND")
+        )
+      }
+
+      throw err
+    }
+
+    const response = await this.k8sService.k8sApi.deleteNamespace({
+      name: projectName,
     })
 
     return response
@@ -775,11 +797,13 @@ export class ProjectService {
 
               const ingressPathValue = ingressPath.path ?? "/"
 
-              path =
-                ingressPathValue.includes("(.*)") ||
-                ingressPathValue.includes(".*")
-                  ? "/"
-                  : ingressPathValue
+              if (ingressPathValue === "/(.*)") {
+                path = "/"
+              } else if (ingressPathValue.endsWith("/(.*)")) {
+                path = ingressPathValue.slice(0, -4) || "/"
+              } else {
+                path = ingressPathValue
+              }
 
               break
             }

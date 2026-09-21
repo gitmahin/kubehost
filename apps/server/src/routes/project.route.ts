@@ -26,6 +26,16 @@ export class ProjectRouter implements IRouter {
       )
 
     this.router
+      .route("/")
+      .delete(
+        asyncHandler(
+          this.projectController.deleteProjectHandler.bind(
+            this.projectController
+          )
+        )
+      )
+
+    this.router
       .route("/deployments")
       .post(
         asyncHandler(
