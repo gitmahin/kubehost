@@ -21,10 +21,14 @@ Give it a Docker image and a domain, and your app is live. That's it.
 1. Create a project
 2. Create a deployment
 3. Give it your Docker image
-4. Add a domain
-5. Point your domain's DNS to your VPS's public IP
+4. Add a domain. By default, `/` (the root) points to your deployment.
+   You can optionally add extra paths under the same domain to route
+   traffic to other deployments - for example, if `example.com` serves
+   your client app, you can add `example.com/api` to route API requests
+   to your backend/API deployment.
+6. Point your domain's DNS to your VPS's public IP
 
-Your app is now live. You can also route paths like `example.com/api` to a
+Your app is now live.
 specific deployment.
 
 ## Connecting services to each other (e.g. a database)
@@ -68,7 +72,18 @@ kubehost --api-server http://<your_domain>:3000/api
 Don't worry about port conflicts between your deployments - even if two
 services use the same port, KubeHost routes them correctly on its own.
 
-### Open these ports (e.g. AWS EC2 security group)
+*Once KubeHost starts successfully, open the dashboard in your browser:*
+
+http://<your_domain>:3001
+
+> [!WARNING]
+> **Do not change ports 3000 or 3001.** These are fixed and required:
+> - **Port 3000** - API server (used internally)
+> - **Port 3001** - Client dashboard (this is what you open in your browser)
+>
+> If these ports are blocked, changed, or not opened in your firewall/security group, you will not be able to access the dashboard or use KubeHost at all.
+
+### Setup Inbound rules (e.g. AWS EC2 security group)
 
 | Type | Port | Source    |
 |------|------|-----------|
