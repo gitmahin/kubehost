@@ -22,7 +22,8 @@ import type {
   ApplicationCreateServerInputType,
 } from "@repo/zod"
 import { EnvVarRow } from "@/components/deployments"
-import { projectService } from "@/lib/service"
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
 
 type SearchParams = {
   project_name?: string
@@ -82,7 +83,9 @@ function RouteComponent() {
     control,
     name: "envVars",
   })
-
+const projectService = new ProjectService(
+  getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+)
   // Mutation to send structured deployment data to server
   const createDeploymentMutation = useMutation({
     mutationFn: async (payload: ApplicationCreateServerInputType) => {

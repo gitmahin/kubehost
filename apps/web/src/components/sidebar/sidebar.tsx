@@ -22,9 +22,11 @@ import {
   LayoutGrid,
   Database,
 } from "lucide-react"
-import { projectService } from "@/lib/service"
+
 import { useQuery } from "@tanstack/react-query"
 import Skeleton from "react-loading-skeleton"
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
 
 type SidebarLinkType = {
   icon: ComponentType<SVGProps<SVGSVGElement>>
@@ -57,7 +59,9 @@ export const Sidebar = () => {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-
+const projectService = new ProjectService(
+ getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+)
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {

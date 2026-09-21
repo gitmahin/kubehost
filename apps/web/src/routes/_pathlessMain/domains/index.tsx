@@ -18,7 +18,8 @@ import {
   TableCell,
 } from "@workspace/ui/components/table"
 import { Badge } from "@workspace/ui/components/badge"
-import { projectService } from "@/lib/service"
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
 
 export const Route = createFileRoute("/_pathlessMain/domains/")({
   component: RouteComponent,
@@ -31,6 +32,9 @@ type Domain = {
 }
 
 function RouteComponent() {
+  const projectService = new ProjectService(
+ getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+)
   const {
     data: domains = [],
     isLoading,

@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { Badge, Button } from "@workspace/ui/components"
-import { projectService } from "@/lib/service"
 import { useNavigate } from "@tanstack/react-router"
 
 import { cn } from "@workspace/ui/lib/utils"
 import { getStatusStyle } from "@/utils/statusStyle"
 import Skeleton from "react-loading-skeleton"
 import { CirclePlus } from "lucide-react"
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
 
 type Deployment = {
   name?: string
@@ -22,6 +23,10 @@ export const ProjectSidebar = ({
   depl_id: string
 }) => {
   const navigate = useNavigate()
+
+  const projectService = new ProjectService(
+  getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+)
 
   const { data: deployments = [], isLoading } = useQuery({
     queryKey: ["deployments", project_id],

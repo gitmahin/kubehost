@@ -58,7 +58,8 @@ import {
   type ChartConfig,
 } from "@workspace/ui/components/chart"
 import { cn } from "@workspace/ui/lib/utils"
-import { projectService } from "@/lib/service"
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
 
 export const Route = createFileRoute(
   "/_pathlessMain/projects/$project_id/depl/$depl_id/"
@@ -145,6 +146,9 @@ const restartChartConfig = {
 } satisfies ChartConfig
 
 function RouteComponent() {
+  const projectService = new ProjectService(
+getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+)
   const { project_id, depl_id } = Route.useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()

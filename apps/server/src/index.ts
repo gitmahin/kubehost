@@ -14,7 +14,7 @@ import { ApiRouter } from "./routes"
 const server = new ExpressServer()
 const app = server.GetApp()
 
-// app.use(requestLogger());
+// app.use(requestLogger()); 
 /* -------------------------------------------------------------------------- */
 /*                                   Routes                                   */
 /* -------------------------------------------------------------------------- */

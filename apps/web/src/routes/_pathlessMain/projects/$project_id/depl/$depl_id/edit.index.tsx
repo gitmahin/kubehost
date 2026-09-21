@@ -31,8 +31,9 @@ import type {
   ApplicationCreateServerInputType,
 } from "@repo/zod"
 import { EnvVarRow } from "@/components/deployments"
-import { projectService } from "@/lib/service"
 import { EditFormLoader } from "@/components/skeleton"
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
 
 export const Route = createFileRoute(
   "/_pathlessMain/projects/$project_id/depl/$depl_id/edit/"
@@ -48,6 +49,9 @@ export type SecretMapDataType = {
 }
 
 function RouteComponent() {
+  const projectService = new ProjectService(
+getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { project_id: projectId, depl_id: deplId } = Route.useParams()

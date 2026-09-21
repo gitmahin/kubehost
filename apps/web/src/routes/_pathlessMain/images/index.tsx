@@ -14,9 +14,10 @@ import {
   TableBody,
   TableCell,
 } from "@workspace/ui/components/table"
-import { projectService } from "@/lib/service"
 import { EmptyDeployment } from "@/components/deployments/EmptyView"
 import Skeleton from "react-loading-skeleton"
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
 
 export const Route = createFileRoute("/_pathlessMain/images/")({
   component: RouteComponent,
@@ -43,6 +44,9 @@ function formatRelativeTime(dateStr?: string) {
 }
 
 export function RouteComponent() {
+  const projectService = new ProjectService(
+ getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+)
   const {
     data: deployments = [],
     isLoading,

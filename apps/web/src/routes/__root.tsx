@@ -7,6 +7,7 @@ const queryClient = new QueryClient()
 import appCss from "@workspace/ui/globals.css?url"
 import "react-loading-skeleton/dist/skeleton.css"
 import { SkeletonTheme } from "react-loading-skeleton"
+import { injectRuntimeEnv } from "@/ssr"
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -42,6 +43,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en" className={`dark`}>
       <head>
         <HeadContent />
+        {injectRuntimeEnv()}
       </head>
       <body className="dark overflow-x-hidden">
         <QueryClientProvider client={queryClient}>

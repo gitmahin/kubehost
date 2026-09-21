@@ -25,8 +25,9 @@ import {
 } from "@workspace/ui/components/select"
 import { Badge } from "@workspace/ui/components/badge"
 import { cn } from "@workspace/ui/lib/utils"
-import { projectService } from "@/lib/service"
 import { EmptyDeployment } from "@/components/deployments/EmptyView"
+import { ProjectService } from "@repo/services"
+import { getClientEnv } from "@/utils/env"
 
 type DeploymentsSearch = {
   project?: string
@@ -102,7 +103,9 @@ function formatRelativeTime(dateStr?: string) {
 function RouteComponent() {
   const navigate = useNavigate()
   const { project: selectedProject = "all" } = Route.useSearch()
-
+const projectService = new ProjectService(
+  getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
+)
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {

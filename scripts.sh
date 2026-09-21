@@ -142,7 +142,7 @@ createContainers() {
     -p 3001:3000 \
     --name kubehost-client \
     --network minikube \
-    -e NITRO_PUBLIC_API_SERVER_URL="$apiServerUrl" \
+    -e VITE_API_SERVER_URL="$apiServerUrl" \
     dockermahin/kubehost-client:latest 
 
   if minikube addons list | grep -q "| ingress .*| enabled ✅"; then
