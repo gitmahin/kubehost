@@ -67,7 +67,7 @@ Start it:
 ```bash
 kubehost --api-server http://<your_domain>:3000/api
 ```
-> Port `3000` is required - that's where the API server listens.
+> Port `3000/api` is required - that's where the API server listens.
 
 Don't worry about port conflicts between your deployments - even if two
 services use the same port, KubeHost routes them correctly on its own.
