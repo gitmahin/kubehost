@@ -1,5 +1,6 @@
-kubehost (26.0.0-3) noble; urgency=medium
+kubehost (26.0.0-6) resolute; urgency=medium
 
-  * Fix debian/install path to usr/local/bin/kubehost/scripts.sh.
+  * Target resolute Ubuntu series for PPA compatibility.
+  * Corrected debian/install path and control dependencies.
 
- -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 16:15:00 +0000
+ -- Nimul Islam Mahin <nimulmahin@gmail.com>  Mon, 21 Sep 2026 16:50:00 +0000
