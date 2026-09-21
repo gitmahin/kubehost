@@ -447,7 +447,7 @@ function RouteComponent() {
                       rel="noreferrer"
                       className="flex items-center gap-1 hover:underline"
                     >
-                      {ing.host}
+                      {ing.host}{ing.path}
                       <ExternalLink className="h-3 w-3 text-zinc-500" />
                     </a>
                   </div>

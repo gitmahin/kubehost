@@ -58,6 +58,12 @@ type DeleteDeploymentParams = {
   ingressName: string
 }
 
+const normalizeIngressPath = (path?: string) => {
+  if (!path) return "/"
+
+  return path.replace(/\/\\?\(\.\*\)$/, "").replace(/\/+$/, "") || "/"
+}
+
 @injectable()
 export class ProjectService {
   constructor(
@@ -697,7 +703,7 @@ export class ProjectService {
           .map((path) => ({
             name: item.metadata?.name,
             host: rule.host,
-            path: path.path,
+            path: normalizeIngressPath(path.path),
             pathType: path.pathType,
           }))
       )
