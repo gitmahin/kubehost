@@ -1,7 +1,0 @@
-Package: kubehost
-Version: 1.0-1
-Section: utils
-Priority: optional
-Architecture: all
-Maintainer: Your Name nimulmahin@gmail.com
-Description: Utility script to install KubeHost.

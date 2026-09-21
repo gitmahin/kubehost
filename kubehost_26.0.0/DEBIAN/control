@@ -1,0 +1,8 @@
+Package: kubehost
+Version: 26.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Nimul Islam Mahin <nimulmahin@gmail.com>
+Description: Automated networking and container orchestration CLI tool for kubehost.
+
