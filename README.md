@@ -4,6 +4,8 @@
 
 Just provide your Docker image - kubehost handles networking, load balancing and HA complexities behind the scenes.
 
+[Show me how to deploy my cloud infrastructure and applications](quick-start)
+
 ![alt text](image.png)
 
 We've all been there: it's a hackathon, your app is ready, and now you're
@@ -111,5 +113,46 @@ pnpm dev
 ```
 
 ---
+
+## Quick Start
+1. Create AWS ec2
+2. Install docker engine
+3. Install minikube
+4. 
+   ```bash
+   sudo usermod -aG docker $USER
+   newgrp docker
+   ```
+5. Create domain for kubehost client (free or paid) and attach with public ip of your AWS EC2 
+6. 
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/gitmahin/kubehost/main/install.sh | sudo bash
+   ```
+7. 
+   ```bash
+   kubehost --api-server http://<your_domain>:3000/api
+   ```
+8. Add inbound rules
+   
+   | Type | Port | Source    |
+   |------|------|-----------|
+   | TCP  | 3000 | 0.0.0.0/0 |
+   | TCP  | 3001 | 0.0.0.0/0 |
+   | TCP  | 80   | 0.0.0.0/0 |
+
+9. Open in browser: http://<your_domain>:3001
+10. Create new project
+11. Create new application deployment. 
+
+> [!WARNING]
+> (For publicly accessible applications, keep the port binding set to 80; otherwise, they won’t be accessible.)
+
+12. Get domain for your application
+13. Attach the domain with public ip of AWS EC2 and done.
+14. **Attach a service with your created application? **
+      1. Create new deployment for that service.
+      2. Copy the deployment name and use it as host
+      3. Pass the address of your service to that application via env
+      (e.g. postgresql://username:password@<deployment_name>:<bounded_port>/database_name)
 
 Happy deploying! 🚀
