@@ -149,10 +149,10 @@ pnpm dev
 
 12. Get domain for your application
 13. Attach the domain with public ip of AWS EC2 and done.
-14. **Attach a service with your created application? **
+14. **Attach a service with your created application?**
       1. Create new deployment for that service.
       2. Copy the deployment name and use it as host
       3. Pass the address of your service to that application via env
-      (e.g. postgresql://username:password@<deployment_name>:<bounded_port>/database_name)
+      (e.g. `postgresql://username:password@<deployment_name>:<bounded_port>/database_name`)
 
 Happy deploying! 🚀
