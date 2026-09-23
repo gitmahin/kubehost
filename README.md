@@ -4,7 +4,7 @@
 
 Just provide your Docker image - kubehost handles networking, load balancing and HA complexities behind the scenes.
 
-[Show me how to deploy my cloud infrastructure and applications](quick-start)
+[Show me how to deploy my cloud infrastructure and applications](#quick-start)
 
 ![alt text](image.png)
 
