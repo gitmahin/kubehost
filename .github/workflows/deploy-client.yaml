@@ -49,8 +49,8 @@ jobs:
               echo "Please choose release type to deploy!"
           fi
 
-  server:
-    name: "Build & Push Server Docker Images"
+  client:
+    name: "Build & Push Client Docker Images"
     needs: [base-setup]
     runs-on: ubuntu-latest
     strategy:
@@ -119,7 +119,7 @@ jobs:
   merge:
     runs-on: ubuntu-latest
     needs:
-      - server
+      - client
       - base-setup
 
     env:
