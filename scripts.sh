@@ -5,6 +5,7 @@ isNatReset=false
 isReCreateContainers=false
 apiServer=""
 showHelp=false
+deleteKubeHost=false
 
 # Parse positional arguments
 while [[ $# -gt 0 ]]; do
@@ -26,6 +27,10 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             ;;
+        --delete)
+            deleteKubeHost=true
+            shift
+            ;;
         --help|-h)
             showHelp=true
             shift
@@ -41,7 +46,7 @@ done
 # Display Help Information
 printHelp() {
 
-    echo "KUBEHOST CLI TOOL | v26.0.1"
+    echo "KUBEHOST CLI TOOL | v26.1.1"
     echo "A Bash-based CLI tool for automated Depoylment Infrastructure setup."
     echo ""
     echo "Usage: kubehost [OPTIONS]"
@@ -50,12 +55,14 @@ printHelp() {
     echo "  --api-server <url>    Specify the API server URL for the web client container."
     echo "  --re-create           Clean up existing K8s resources, re-generate tokens, and restart containers."
     echo "  --nat-reset           Clear iptables NAT rules, stop proxy containers, and reset routing."
+    echo "  --delete              Remove kubehost containers, images, K8s resources, and stop port-forwarding."
     echo "  --help, -h            Display this help message and exit."
     echo ""
     echo "Examples:"
     echo "  kubehost --api-server https://<domain.com>:3000/api"
     echo "  kubehost --re-create --api-server https://<domain.com>:3000/api"
     echo "  kubehost --nat-reset"
+    echo "  kubehost --delete"
 }
 
 if [[ "$showHelp" = true ]]; then
@@ -87,6 +94,36 @@ natReset() {
   sudo iptables -t nat -F PREROUTING 2>/dev/null || true
 
   sudo netfilter-persistent save >/dev/null 2>&1 || true
+}
+
+deleteKubeHostFn() {
+  echo "Stopping background port-forwarding..."
+  sudo pkill -f "port-forward" 2>/dev/null || true
+
+  echo "Removing kubehost Docker containers..."
+  docker rm -f kubehost-server 2>/dev/null || true
+  docker rm -f kubehost-client 2>/dev/null || true
+
+  echo "Removing kubehost Docker images..."
+  docker rmi -f dockermahin/kubehost-server:latest 2>/dev/null || true
+  docker rmi -f dockermahin/kubehost-client:latest 2>/dev/null || true
+
+  echo "Removing Kubernetes resources..."
+  minikube kubectl -- delete clusterrolebinding kubehost-sa-admin --ignore-not-found
+  minikube kubectl -- delete serviceaccount kubehost-sa -n default --ignore-not-found
+
+  echo "Clearing NAT rules and proxy containers..."
+  docker stop minikube-port-80 2>/dev/null || true
+  docker rm -f minikube-port-80 2>/dev/null || true
+
+  sudo iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 30111 2>/dev/null || true
+  sudo iptables -t nat -D OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 30111 2>/dev/null || true
+  sudo iptables -t nat -F PREROUTING 2>/dev/null || true
+  sudo netfilter-persistent save >/dev/null 2>&1 || true
+
+  rm -f port-forward.log 2>/dev/null || true
+
+  echo "kubehost has been deleted."
 }
 
 createContainers() {
@@ -167,6 +204,11 @@ createContainers() {
 # Execution Flow
 
 actionExecuted=false
+
+if [[ "$deleteKubeHost" = true ]]; then
+  deleteKubeHostFn
+  actionExecuted=true
+fi
 
 if [[ "$isNatReset" = true ]]; then
   natReset
