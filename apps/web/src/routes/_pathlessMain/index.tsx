@@ -1,15 +1,15 @@
-import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { observer } from "mobx-react"
 import {
   Cpu,
   HardDrive,
   MemoryStick,
   Activity,
-  Server,
   Clock,
-  Gauge,
-  CheckCircle2,
+  Server,
 } from "lucide-react"
+import Skeleton from "react-loading-skeleton"
+
 import {
   Card,
   CardContent,
@@ -19,53 +19,21 @@ import {
 } from "@workspace/ui/components/card"
 import { Progress } from "@workspace/ui/components"
 import { Badge } from "@workspace/ui/components/badge"
-
-import Skeleton from "react-loading-skeleton"
-
 import { metricsStore } from "@/stores"
-import {observer} from "mobx-react"
+import { formatBytes } from "@/utils/formatBytes"
+import { formatUptime } from "@/utils/formatUptime"
+import { MetricsDashLoader } from "@/components/skeleton"
 
 export const Route = createFileRoute("/_pathlessMain/")({
   component: observer(RouteComponent),
 })
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B"
-  const k = 1024
-  const sizes = ["B", "KB", "MB", "GB", "TB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
-}
-
-function formatUptime(seconds: number): string {
-  const hrs = Math.floor(seconds / 3600)
-  const mins = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
-  if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`
-  if (mins > 0) return `${mins}m ${secs}s`
-  return `${secs}s`
-}
-
 function RouteComponent() {
- 
+  const { metrics, heapUsedPercent, isLoading, isError, errorMessage, getProgressBarColor } =
+    metricsStore
 
- // 3. Read value directly from MobX store
-  const { metrics, heapUsedPercent, isLoading, isError, errorMessage } = metricsStore
-
-  if (isLoading || !metrics) {
-    return (
-      <div className="mx-auto max-w-7xl flex-1 space-y-6 p-6 md:p-8">
-        <div className="flex items-center justify-between border-b pb-6">
-          <Skeleton className="h-8 w-[200px]" />
-          <Skeleton className="h-6 w-[100px]" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-[120px] rounded-xl" />
-          ))}
-        </div>
-      </div>
-    )
+  if (isLoading || (!metrics && !isError)) {
+    return <MetricsDashLoader/>
   }
 
   if (isError) {
@@ -81,6 +49,14 @@ function RouteComponent() {
     )
   }
 
+  const procMem = metrics?.memory?.process
+  const sysMem = metrics?.memory?.system
+  const cpu = metrics?.cpu
+  const storage = metrics?.storage
+  const processInfo = metrics?.process
+  const eventLoop = metrics?.eventLoop
+  const handles = metrics?.handles
+
   return (
     <div className="mx-auto max-w-7xl flex-1 space-y-6 p-6 md:p-8">
       {/* Header */}
@@ -88,15 +64,10 @@ function RouteComponent() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">System Metrics</h1>
           <p className="text-sm text-muted-foreground">
-            Fetched via TanStack Query every 4s and stored in MobX state.
+            Updates every 4 seconds
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1.5 border-green-500/40 bg-green-500/10 text-green-500">
-            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            Live Query + MobX
-          </Badge>
-        </div>
+
       </div>
 
       {/* Primary KPI Grid */}
@@ -109,30 +80,40 @@ function RouteComponent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {metrics.cpu.totalSeconds.toFixed(3)}s
+              {cpu?.totalSeconds?.toFixed(3) ?? "0.000"}s
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              User: {metrics.cpu.userSeconds.toFixed(3)}s | Sys: {metrics.cpu.systemSeconds.toFixed(3)}s
-            </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+  {cpu?.cores && (
+    <Badge variant="outline" >
+      {cpu.cores} Cores
+    </Badge>
+  )}
+  <Badge variant="secondary" >
+    User: {cpu?.userSeconds?.toFixed(3) ?? "0"}s
+  </Badge>
+  <Badge variant="secondary" >
+    Sys: {cpu?.systemSeconds?.toFixed(3) ?? "0"}s
+  </Badge>
+</div>
           </CardContent>
         </Card>
 
-        {/* Memory */}
+        {/* Process Memory */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Memory (RSS)</CardTitle>
+            <CardTitle className="text-sm font-medium">Process Memory</CardTitle>
             <MemoryStick className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {metrics.memory.residentMB.toFixed(1)} MB
+              {procMem?.residentMB ?? 0} MB
             </div>
             <div className="mt-2 space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Heap ({formatBytes(metrics.memory.heapUsedBytes)})</span>
+                <span>Heap ({formatBytes(procMem?.heapUsedBytes)})</span>
                 <span>{heapUsedPercent.toFixed(1)}%</span>
               </div>
-              <Progress value={heapUsedPercent} className="h-1.5" />
+              <Progress value={heapUsedPercent} className="h-1.5" indicatorClassName={getProgressBarColor(heapUsedPercent ?? 0)} />
             </div>
           </CardContent>
         </Card>
@@ -145,14 +126,18 @@ function RouteComponent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {metrics.storage.usedGB.toFixed(1)} / {metrics.storage.totalGB.toFixed(1)} GB
+              {storage?.usedGB?.toFixed(1) ?? 0} / {storage?.totalGB?.toFixed(1) ?? 0} GB
             </div>
             <div className="mt-2 space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Used</span>
-                <span>{metrics.storage.usedPercent}%</span>
+                <span>{storage?.usedPercent ?? 0}%</span>
               </div>
-              <Progress value={metrics.storage.usedPercent} className="h-1.5" />
+         <Progress
+  value={storage?.usedPercent ?? 0}
+  className="h-1.5"
+  indicatorClassName={getProgressBarColor(storage?.usedPercent ?? 0)}
+/>
             </div>
           </CardContent>
         </Card>
@@ -165,10 +150,10 @@ function RouteComponent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatUptime(metrics.process.uptimeSeconds)}
+              {formatUptime(processInfo?.uptimeSeconds)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Started: {new Date(metrics.process.startTimeSeconds * 1000).toLocaleTimeString()}
+              Started: {processInfo?.startTimeSeconds ? new Date(processInfo.startTimeSeconds * 1000).toLocaleTimeString() : "N/A"}
             </p>
           </CardContent>
         </Card>
@@ -176,39 +161,106 @@ function RouteComponent() {
 
       {/* Detailed Diagnostic Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Memory Breakdown */}
+        {/* Process Memory Details */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <MemoryStick className="h-4 w-4 text-primary" /> Memory Breakdown
+              <MemoryStick className="h-4 w-4 text-primary" /> Process Memory
             </CardTitle>
-            <CardDescription>Process memory allocations</CardDescription>
+            <CardDescription>Node.js engine memory footprint</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Resident (RSS)</span>
-              <span className="font-mono font-medium">{formatBytes(metrics.memory.residentBytes)}</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.residentBytes)}</span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Virtual Memory</span>
-              <span className="font-mono font-medium">{formatBytes(metrics.memory.virtualBytes)}</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.virtualBytes)}</span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Heap Used</span>
-              <span className="font-mono font-medium">{formatBytes(metrics.memory.heapUsedBytes)}</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.heapUsedBytes)}</span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Heap Total</span>
-              <span className="font-mono font-medium">{formatBytes(metrics.memory.heapTotalBytes)}</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.heapTotalBytes)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">External Memory</span>
-              <span className="font-mono font-medium">{formatBytes(metrics.memory.externalBytes)}</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.externalBytes)}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Event Loop */}
+        {/* System Memory Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Server className="h-4 w-4 text-primary" /> System Memory
+            </CardTitle>
+            <CardDescription>Host RAM statistics</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Total Memory</span>
+              <span className="font-mono font-medium">{sysMem?.totalGB?.toFixed(2) ?? 0} GB</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Used Memory</span>
+              <span className="font-mono font-medium">{sysMem?.usedGB?.toFixed(2) ?? 0} GB</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Free Memory</span>
+              <span className="font-mono font-medium">{sysMem?.freeGB?.toFixed(2) ?? 0} GB</span>
+            </div>
+            <div className="space-y-1 pt-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>System Usage</span>
+                <span>{sysMem?.usedPercent ?? 0}%</span>
+              </div>
+              <Progress value={sysMem?.usedPercent ?? 0} className="h-1.5" indicatorClassName={getProgressBarColor(sysMem?.usedPercent ?? 0)} />
+            </div>
+          </CardContent>
+        </Card>
+
+{/* Disk usage */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <HardDrive className="h-4 w-4 text-primary" /> System Disk Volume
+            </CardTitle>
+            <CardDescription>Host Disk capacity statistics</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Total Capacity</span>
+              <span className="font-mono font-medium">
+                {storage?.totalGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.totalBytes)})
+              </span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Used Space</span>
+              <span className="font-mono font-medium">
+                {storage?.usedGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.usedBytes)})
+              </span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Free Space</span>
+              <span className="font-mono font-medium">
+                {storage?.freeGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.freeBytes)})
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Available Space</span>
+              <span className="font-mono font-medium">
+                {formatBytes(storage?.availableBytes)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Event Loop & Handles */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -219,54 +271,27 @@ function RouteComponent() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Current Lag</span>
-              <span className="font-mono font-medium">{(metrics.eventLoop.lagSeconds * 1000).toFixed(2)} ms</span>
+              <span className="font-mono font-medium">{((eventLoop?.lagSeconds ?? 0) * 1000).toFixed(2)} ms</span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">p50 / p90 Latency</span>
               <span className="font-mono font-medium">
-                {(metrics.eventLoop.lagP50 * 1000).toFixed(1)} ms / {(metrics.eventLoop.lagP90 * 1000).toFixed(1)} ms
+                {((eventLoop?.lagP50 ?? 0) * 1000).toFixed(1)} ms / {((eventLoop?.lagP90 ?? 0) * 1000).toFixed(1)} ms
               </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Active Handles</span>
-              <span className="font-mono font-medium">{metrics.handles.activeHandlesTotal}</span>
+              <span className="font-mono font-medium">{handles?.activeHandlesTotal ?? 0}</span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Open File Descriptors</span>
               <span className="font-mono font-medium">
-                {metrics.handles.openFds} / {metrics.handles.maxFds}
+                {handles?.openFds ?? 0} / {handles?.maxFds ?? 0}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Active Requests</span>
-              <span className="font-mono font-medium">{metrics.handles.activeRequestsTotal}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <HardDrive className="h-4 w-4 text-primary" /> Disk Volume
-            </CardTitle>
-            <CardDescription>Disk capacity statistics</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-muted-foreground">Total Capacity</span>
-              <span className="font-mono font-medium">{metrics.storage.totalGB.toFixed(1)} GB</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-muted-foreground">Used Space</span>
-              <span className="font-mono font-medium">{metrics.storage.usedGB.toFixed(1)} GB</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-muted-foreground">Free Space</span>
-              <span className="font-mono font-medium">{metrics.storage.freeGB.toFixed(1)} GB</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Available Space</span>
-              <span className="font-mono font-medium">{formatBytes(metrics.storage.availableBytes)}</span>
+              <span className="font-mono font-medium">{handles?.activeRequestsTotal ?? 0}</span>
             </div>
           </CardContent>
         </Card>
