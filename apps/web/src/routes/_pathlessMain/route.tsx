@@ -17,7 +17,7 @@ function RouteComponent() {
     getClientEnv("VITE_API_SERVER_URL")
   )
 
-  const { data: metrics, isLoading } = useQuery<MetricsResponse>({
+  const { data: metrics, isLoading, isError, error } = useQuery<MetricsResponse>({
     queryKey: ["kubehost-metrics"],
     queryFn: async () => {
       const res: any = await kubehostService.getMetricsDashboard()
@@ -28,10 +28,17 @@ function RouteComponent() {
   })
 
   useEffect(() => {
-    if (metrics) {
+    metricsStore.setIsLoading(isLoading)
+
+    if (isError) {
+      metricsStore.setError(
+        true,
+        (error as any)?.message || "Failed to fetch system metrics"
+      )
+    } else if (metrics) {
       metricsStore.setMetrics(metrics)
     }
-  }, [metrics])
+  }, [isLoading, isError, error, metrics])
 
   return (
     <div className="flex items-start justify-start">

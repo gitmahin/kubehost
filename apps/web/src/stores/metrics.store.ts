@@ -1,22 +1,36 @@
+import type { MetricsResponse } from "@repo/types"
 import { makeAutoObservable } from "mobx"
-import type {MetricsResponse} from "@repo/types"
+
 
 
 class MetricsStore {
   metrics: MetricsResponse | null = null
+  isLoading = true
+  isError = false
+  errorMessage = ""
 
   constructor() {
     makeAutoObservable(this)
   }
 
-  // Set metrics into the store
-  setMetrics(data: MetricsResponse | null) {
-    this.metrics = data
+  setIsLoading(loading: boolean) {
+    this.isLoading = loading
   }
 
-  // Computed helper for memory heap percentage
+  setError(isError: boolean, message: string = "") {
+    this.isError = isError
+    this.errorMessage = message
+  }
+
+  setMetrics(data: MetricsResponse | null) {
+    this.metrics = data
+    this.isLoading = false
+    this.isError = false
+    this.errorMessage = ""
+  }
+
   get heapUsedPercent(): number {
-    if (!this.metrics || !this.metrics.memory.heapTotalBytes) return 0
+    if (!this.metrics || !this.metrics.memory?.heapTotalBytes) return 0
     return (
       (this.metrics.memory.heapUsedBytes / this.metrics.memory.heapTotalBytes) *
       100

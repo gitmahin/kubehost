@@ -20,15 +20,13 @@ import {
 import { Progress } from "@workspace/ui/components"
 import { Badge } from "@workspace/ui/components/badge"
 
-import { KubehostService } from "@repo/services"
-import { getClientEnv } from "@/utils/env"
 import Skeleton from "react-loading-skeleton"
-import type {MetricsResponse} from "@repo/types"
-import { useEffect } from "react"
+
 import { metricsStore } from "@/stores"
+import {observer} from "mobx-react"
 
 export const Route = createFileRoute("/_pathlessMain/")({
-  component: RouteComponent,
+  component: observer(RouteComponent),
 })
 
 function formatBytes(bytes: number): string {
@@ -51,6 +49,9 @@ function formatUptime(seconds: number): string {
 function RouteComponent() {
  
 
+ // 3. Read value directly from MobX store
+  const { metrics, heapUsedPercent, isLoading, isError, errorMessage } = metricsStore
+
   if (isLoading || !metrics) {
     return (
       <div className="mx-auto max-w-7xl flex-1 space-y-6 p-6 md:p-8">
@@ -67,10 +68,18 @@ function RouteComponent() {
     )
   }
 
-  const heapUsedPercent =
-    metrics.memory.heapTotalBytes > 0
-      ? (metrics.memory.heapUsedBytes / metrics.memory.heapTotalBytes) * 100
-      : 0
+  if (isError) {
+    return (
+      <div className="mx-auto max-w-7xl p-6 md:p-8">
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="text-destructive">Failed to Load Metrics</CardTitle>
+            <CardDescription>{errorMessage || "An error occurred"}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-7xl flex-1 space-y-6 p-6 md:p-8">
@@ -79,10 +88,15 @@ function RouteComponent() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">System Metrics</h1>
           <p className="text-sm text-muted-foreground">
-           Metrics updated every 4s.
+            Fetched via TanStack Query every 4s and stored in MobX state.
           </p>
         </div>
-       
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="gap-1.5 border-green-500/40 bg-green-500/10 text-green-500">
+            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            Live Query + MobX
+          </Badge>
+        </div>
       </div>
 
       {/* Primary KPI Grid */}
@@ -143,7 +157,7 @@ function RouteComponent() {
           </CardContent>
         </Card>
 
-        {/* Process Uptime */}
+        {/* Uptime */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Uptime</CardTitle>
@@ -160,15 +174,15 @@ function RouteComponent() {
         </Card>
       </div>
 
-      {/* Detailed Diagnostics Grid */}
+      {/* Detailed Diagnostic Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Memory Details */}
+        {/* Memory Breakdown */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <MemoryStick className="h-4 w-4 text-primary" /> Memory Breakdown
             </CardTitle>
-            <CardDescription>Detailed process heap and buffer allocation</CardDescription>
+            <CardDescription>Process memory allocations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2">
@@ -188,19 +202,19 @@ function RouteComponent() {
               <span className="font-mono font-medium">{formatBytes(metrics.memory.heapTotalBytes)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">External C++ Memory</span>
+              <span className="text-muted-foreground">External Memory</span>
               <span className="font-mono font-medium">{formatBytes(metrics.memory.externalBytes)}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Event Loop & Handles */}
+        {/* Event Loop */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Activity className="h-4 w-4 text-primary" /> Event Loop & I/O
             </CardTitle>
-            <CardDescription>Event loop latency and active socket handles</CardDescription>
+            <CardDescription>File descriptors and loop lag</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2">
@@ -230,13 +244,12 @@ function RouteComponent() {
           </CardContent>
         </Card>
 
-        {/* Storage Volume Stats */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <HardDrive className="h-4 w-4 text-primary" /> Disk Volume
             </CardTitle>
-            <CardDescription>Disk capacity and available headroom</CardDescription>
+            <CardDescription>Disk capacity statistics</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2">
@@ -252,7 +265,7 @@ function RouteComponent() {
               <span className="font-mono font-medium">{metrics.storage.freeGB.toFixed(1)} GB</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Available (Non-root)</span>
+              <span className="text-muted-foreground">Available Space</span>
               <span className="font-mono font-medium">{formatBytes(metrics.storage.availableBytes)}</span>
             </div>
           </CardContent>
