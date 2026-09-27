@@ -52,6 +52,7 @@ export class K8sService {
   public k8sApi
   public appsApi
   public networkingApi
+  public customObjectsApi
   public static FIELD_MANAGER: string = "kubehost"
   constructor() {
     this.kc = new k8s.KubeConfig()
@@ -81,6 +82,23 @@ export class K8sService {
     this.k8sApi = this.kc.makeApiClient(k8s.CoreV1Api)
     this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api)
     this.networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api)
+    this.customObjectsApi = this.kc.makeApiClient(k8s.CustomObjectsApi)
+  }
+
+  static parseCpuToNano(cpu: string): number {
+    if (cpu.endsWith("n")) {
+      return Number(cpu.slice(0, -1))
+    }
+
+    if (cpu.endsWith("u")) {
+      return Number(cpu.slice(0, -1)) * 1_000
+    }
+
+    if (cpu.endsWith("m")) {
+      return Number(cpu.slice(0, -1)) * 1_000_000
+    }
+
+    return Number(cpu) * 1_000_000_000
   }
 
   async listAllPods(namespace: string) {
@@ -478,6 +496,149 @@ export class K8sService {
       })
     } catch (error: any) {
       if (error?.code !== 404) throw error
+    }
+  }
+
+  async getDeploymentMetrics(
+    namespace: string,
+    deploymentName: string,
+    cpuThreshold = 70
+  ) {
+    try {
+      console.log(
+        `Fetching metrics for deployment: ${deploymentName} in namespace: ${namespace}...\n`
+      )
+
+      // Get Deployment
+      const deployRes = await this.appsApi.readNamespacedDeployment({
+        name: deploymentName,
+        namespace,
+      })
+
+      const deploymentContainers =
+        deployRes.spec?.template?.spec?.containers ?? []
+
+      if (deploymentContainers.length === 0) {
+        throw new Error(`No containers found in deployment "${deploymentName}"`)
+      }
+
+      // Build Deployment label selector
+      const matchLabels = deployRes.spec?.selector?.matchLabels ?? {}
+
+      const labelSelector = Object.entries(matchLabels)
+        .map(([key, value]) => `${key}=${value}`)
+        .join(",")
+
+      // Get Pod metrics
+      const metricsRes = await this.customObjectsApi.listNamespacedCustomObject(
+        {
+          group: "metrics.k8s.io",
+          version: "v1beta1",
+          namespace,
+          plural: "pods",
+          labelSelector,
+        }
+      )
+
+      const podMetricsList = (metricsRes.body as any)?.items ?? []
+
+      if (podMetricsList.length === 0) {
+        console.log(
+          "No active resource metrics found. Ensure metrics-server is running."
+        )
+
+        return {
+          hasHighCpu: false,
+          shouldScale: false,
+          pods: [],
+        }
+      }
+
+      // Calculate CPU utilization
+      let totalCpuNano = 0
+
+      const pods = podMetricsList.map((pod: any) => {
+        const containers = pod.containers ?? []
+
+        const containerMetrics = containers.map((containerMetric: any) => {
+          const cpuUsage = containerMetric.usage?.cpu
+
+          if (!cpuUsage) {
+            return {
+              name: containerMetric.name,
+              cpuUsage: null,
+              cpuLimit: null,
+              utilization: null,
+              highCpu: false,
+            }
+          }
+
+          /**
+           * Find the same container in Deployment spec.
+           */
+          const containerSpec = deploymentContainers.find(
+            (container) => container.name === containerMetric.name
+          )
+
+          const cpuLimit = containerSpec?.resources?.limits?.cpu
+
+          /**
+           * If there is no CPU limit, we cannot calculate
+           * utilization against the limit.
+           */
+          if (!cpuLimit) {
+            return {
+              name: containerMetric.name,
+              cpuUsage,
+              cpuLimit: null,
+              utilization: null,
+              highCpu: false,
+            }
+          }
+
+          const usageNano = K8sService.parseCpuToNano(cpuUsage)
+          const limitNano = K8sService.parseCpuToNano(cpuLimit)
+
+          totalCpuNano += usageNano
+
+          const utilization = (usageNano / limitNano) * 100
+
+          const highCpu = utilization > cpuThreshold
+
+          if (highCpu) {
+            console.log(
+              `HIGH CPU: ${pod.metadata?.name} / ${containerMetric.name} -> ${utilization.toFixed(2)}%`
+            )
+          }
+
+          return {
+            name: containerMetric.name,
+            cpuUsage,
+            cpuLimit,
+            utilization,
+            highCpu,
+          }
+        })
+
+        return {
+          name: pod.metadata?.name,
+          containers: containerMetrics,
+        }
+      })
+
+      // Check whether ANY container is above threshold
+      const hasHighCpu = pods.some((pod: any) =>
+        pod.containers.some((container: any) => container.highCpu)
+      )
+
+      return {
+        hasHighCpu,
+        shouldScale: hasHighCpu,
+        pods,
+        totalCpuMillicores: totalCpuNano / 1_000_000,
+      }
+    } catch (error: any) {
+      throw error
     }
   }
 }
