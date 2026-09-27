@@ -58,4 +58,6 @@ export class ProjectService extends ApiService {
   }: ProjectAndDeploymentNameInputType) {
     return this.get(`/${project_name}/dash/${deployment_name}`)
   }
+
+
 }
