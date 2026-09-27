@@ -6,7 +6,7 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "turbo format",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,css}\"",
     "typecheck": "turbo typecheck"
   },
   "devDependencies": {
@@ -31,8 +31,8 @@
     ]
   },
   "dependencies": {
-        "dotenv": "^17.4.2",
-        "inversify": "^8.2.3",
+    "dotenv": "^17.4.2",
+    "inversify": "^8.2.3",
     "reflect-metadata": "^0.2.2",
     "@repo/services": "workspace:*",
     "@repo/zod": "workspace:*",

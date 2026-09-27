@@ -7,7 +7,7 @@ function Progress({
   value,
   indicatorClassName,
   ...props
-}: ProgressPrimitive.Root.Props & {indicatorClassName?: string}) {
+}: ProgressPrimitive.Root.Props & { indicatorClassName?: string }) {
   return (
     <ProgressPrimitive.Root
       value={value}

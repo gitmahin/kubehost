@@ -3,7 +3,7 @@
   "globalEnv": ["API_SERVER_URL"],
   "ui": "tui",
   "tasks": {
-   "build": {
+    "build": {
       "dependsOn": ["^build"],
       "outputs": [".output/**", "dist/**"],
       "inputs": ["$API_SERVER_URL"]

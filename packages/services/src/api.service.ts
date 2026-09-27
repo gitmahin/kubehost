@@ -2,42 +2,42 @@ import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
   type AxiosRequestHeaders,
-} from "axios";
+} from "axios"
 
 export abstract class ApiService {
-  baseURL: string;
-  private axiosInstance: AxiosInstance;
+  baseURL: string
+  private axiosInstance: AxiosInstance
   constructor(baseURL: string, headers?: AxiosRequestHeaders) {
-    this.baseURL = baseURL;
+    this.baseURL = baseURL
     this.axiosInstance = axios.create({
       baseURL,
       headers,
-    });
+    })
   }
 
   get(url: string, params?: {}, config: AxiosRequestConfig = {}) {
     return this.axiosInstance.get(url, {
       ...params,
       ...config,
-    });
+    })
   }
 
   post(url: string, data: {}, params?: {}, config: AxiosRequestConfig = {}) {
     return this.axiosInstance.post(url, data, {
       ...params,
       ...config,
-    });
+    })
   }
 
   put(url: string, data: {}, config: AxiosRequestConfig = {}) {
-    return this.axiosInstance.put(url, data, config);
+    return this.axiosInstance.put(url, data, config)
   }
 
   patch(url: string, data: {}, config: AxiosRequestConfig = {}) {
-    return this.axiosInstance.patch(url, data, config);
+    return this.axiosInstance.patch(url, data, config)
   }
 
   delete(url: string, data?: any, config: AxiosRequestConfig = {}) {
-    return this.axiosInstance.delete(url, { data, ...config });
+    return this.axiosInstance.delete(url, { data, ...config })
   }
 }

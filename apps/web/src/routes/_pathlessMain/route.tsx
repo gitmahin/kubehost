@@ -12,12 +12,16 @@ export const Route = createFileRoute("/_pathlessMain")({
 })
 
 function RouteComponent() {
-
   const kubehostService = new KubehostService(
     getClientEnv("VITE_API_SERVER_URL")
   )
 
-  const { data: metrics, isLoading, isError, error } = useQuery<MetricsResponse>({
+  const {
+    data: metrics,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<MetricsResponse>({
     queryKey: ["kubehost-metrics"],
     queryFn: async () => {
       const res: any = await kubehostService.getMetricsDashboard()

@@ -29,11 +29,17 @@ export const Route = createFileRoute("/_pathlessMain/")({
 })
 
 function RouteComponent() {
-  const { metrics, heapUsedPercent, isLoading, isError, errorMessage, getProgressBarColor } =
-    metricsStore
+  const {
+    metrics,
+    heapUsedPercent,
+    isLoading,
+    isError,
+    errorMessage,
+    getProgressBarColor,
+  } = metricsStore
 
   if (isLoading || (!metrics && !isError)) {
-    return <MetricsDashLoader/>
+    return <MetricsDashLoader />
   }
 
   if (isError) {
@@ -41,8 +47,12 @@ function RouteComponent() {
       <div className="mx-auto max-w-7xl p-6 md:p-8">
         <Card className="border-destructive/50 bg-destructive/5">
           <CardHeader>
-            <CardTitle className="text-destructive">Failed to Load Metrics</CardTitle>
-            <CardDescription>{errorMessage || "An error occurred"}</CardDescription>
+            <CardTitle className="text-destructive">
+              Failed to Load Metrics
+            </CardTitle>
+            <CardDescription>
+              {errorMessage || "An error occurred"}
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -67,7 +77,6 @@ function RouteComponent() {
             Updates every 4 seconds
           </p>
         </div>
-
       </div>
 
       {/* Primary KPI Grid */}
@@ -82,26 +91,24 @@ function RouteComponent() {
             <div className="text-2xl font-bold">
               {cpu?.totalSeconds?.toFixed(3) ?? "0.000"}s
             </div>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-  {cpu?.cores && (
-    <Badge variant="outline" >
-      {cpu.cores} Cores
-    </Badge>
-  )}
-  <Badge variant="secondary" >
-    User: {cpu?.userSeconds?.toFixed(3) ?? "0"}s
-  </Badge>
-  <Badge variant="secondary" >
-    Sys: {cpu?.systemSeconds?.toFixed(3) ?? "0"}s
-  </Badge>
-</div>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {cpu?.cores && <Badge variant="outline">{cpu.cores} Cores</Badge>}
+              <Badge variant="secondary">
+                User: {cpu?.userSeconds?.toFixed(3) ?? "0"}s
+              </Badge>
+              <Badge variant="secondary">
+                Sys: {cpu?.systemSeconds?.toFixed(3) ?? "0"}s
+              </Badge>
+            </div>
           </CardContent>
         </Card>
 
         {/* Process Memory */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Process Memory</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Process Memory
+            </CardTitle>
             <MemoryStick className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -113,7 +120,11 @@ function RouteComponent() {
                 <span>Heap ({formatBytes(procMem?.heapUsedBytes)})</span>
                 <span>{heapUsedPercent.toFixed(1)}%</span>
               </div>
-              <Progress value={heapUsedPercent} className="h-1.5" indicatorClassName={getProgressBarColor(heapUsedPercent ?? 0)} />
+              <Progress
+                value={heapUsedPercent}
+                className="h-1.5"
+                indicatorClassName={getProgressBarColor(heapUsedPercent ?? 0)}
+              />
             </div>
           </CardContent>
         </Card>
@@ -126,18 +137,21 @@ function RouteComponent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {storage?.usedGB?.toFixed(1) ?? 0} / {storage?.totalGB?.toFixed(1) ?? 0} GB
+              {storage?.usedGB?.toFixed(1) ?? 0} /{" "}
+              {storage?.totalGB?.toFixed(1) ?? 0} GB
             </div>
             <div className="mt-2 space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Used</span>
                 <span>{storage?.usedPercent ?? 0}%</span>
               </div>
-         <Progress
-  value={storage?.usedPercent ?? 0}
-  className="h-1.5"
-  indicatorClassName={getProgressBarColor(storage?.usedPercent ?? 0)}
-/>
+              <Progress
+                value={storage?.usedPercent ?? 0}
+                className="h-1.5"
+                indicatorClassName={getProgressBarColor(
+                  storage?.usedPercent ?? 0
+                )}
+              />
             </div>
           </CardContent>
         </Card>
@@ -152,8 +166,13 @@ function RouteComponent() {
             <div className="text-2xl font-bold">
               {formatUptime(processInfo?.uptimeSeconds)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Started: {processInfo?.startTimeSeconds ? new Date(processInfo.startTimeSeconds * 1000).toLocaleTimeString() : "N/A"}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Started:{" "}
+              {processInfo?.startTimeSeconds
+                ? new Date(
+                    processInfo.startTimeSeconds * 1000
+                  ).toLocaleTimeString()
+                : "N/A"}
             </p>
           </CardContent>
         </Card>
@@ -172,23 +191,33 @@ function RouteComponent() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Resident (RSS)</span>
-              <span className="font-mono font-medium">{formatBytes(procMem?.residentBytes)}</span>
+              <span className="font-mono font-medium">
+                {formatBytes(procMem?.residentBytes)}
+              </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Virtual Memory</span>
-              <span className="font-mono font-medium">{formatBytes(procMem?.virtualBytes)}</span>
+              <span className="font-mono font-medium">
+                {formatBytes(procMem?.virtualBytes)}
+              </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Heap Used</span>
-              <span className="font-mono font-medium">{formatBytes(procMem?.heapUsedBytes)}</span>
+              <span className="font-mono font-medium">
+                {formatBytes(procMem?.heapUsedBytes)}
+              </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Heap Total</span>
-              <span className="font-mono font-medium">{formatBytes(procMem?.heapTotalBytes)}</span>
+              <span className="font-mono font-medium">
+                {formatBytes(procMem?.heapTotalBytes)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">External Memory</span>
-              <span className="font-mono font-medium">{formatBytes(procMem?.externalBytes)}</span>
+              <span className="font-mono font-medium">
+                {formatBytes(procMem?.externalBytes)}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -204,27 +233,39 @@ function RouteComponent() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Total Memory</span>
-              <span className="font-mono font-medium">{sysMem?.totalGB?.toFixed(2) ?? 0} GB</span>
+              <span className="font-mono font-medium">
+                {sysMem?.totalGB?.toFixed(2) ?? 0} GB
+              </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Used Memory</span>
-              <span className="font-mono font-medium">{sysMem?.usedGB?.toFixed(2) ?? 0} GB</span>
+              <span className="font-mono font-medium">
+                {sysMem?.usedGB?.toFixed(2) ?? 0} GB
+              </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Free Memory</span>
-              <span className="font-mono font-medium">{sysMem?.freeGB?.toFixed(2) ?? 0} GB</span>
+              <span className="font-mono font-medium">
+                {sysMem?.freeGB?.toFixed(2) ?? 0} GB
+              </span>
             </div>
             <div className="space-y-1 pt-1">
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>System Usage</span>
                 <span>{sysMem?.usedPercent ?? 0}%</span>
               </div>
-              <Progress value={sysMem?.usedPercent ?? 0} className="h-1.5" indicatorClassName={getProgressBarColor(sysMem?.usedPercent ?? 0)} />
+              <Progress
+                value={sysMem?.usedPercent ?? 0}
+                className="h-1.5"
+                indicatorClassName={getProgressBarColor(
+                  sysMem?.usedPercent ?? 0
+                )}
+              />
             </div>
           </CardContent>
         </Card>
 
-{/* Disk usage */}
+        {/* Disk usage */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -236,19 +277,22 @@ function RouteComponent() {
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Total Capacity</span>
               <span className="font-mono font-medium">
-                {storage?.totalGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.totalBytes)})
+                {storage?.totalGB?.toFixed(1) ?? 0} GB (
+                {formatBytes(storage?.totalBytes)})
               </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Used Space</span>
               <span className="font-mono font-medium">
-                {storage?.usedGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.usedBytes)})
+                {storage?.usedGB?.toFixed(1) ?? 0} GB (
+                {formatBytes(storage?.usedBytes)})
               </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Free Space</span>
               <span className="font-mono font-medium">
-                {storage?.freeGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.freeBytes)})
+                {storage?.freeGB?.toFixed(1) ?? 0} GB (
+                {formatBytes(storage?.freeBytes)})
               </span>
             </div>
             <div className="flex justify-between">
@@ -271,27 +315,36 @@ function RouteComponent() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Current Lag</span>
-              <span className="font-mono font-medium">{((eventLoop?.lagSeconds ?? 0) * 1000).toFixed(2)} ms</span>
+              <span className="font-mono font-medium">
+                {((eventLoop?.lagSeconds ?? 0) * 1000).toFixed(2)} ms
+              </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">p50 / p90 Latency</span>
               <span className="font-mono font-medium">
-                {((eventLoop?.lagP50 ?? 0) * 1000).toFixed(1)} ms / {((eventLoop?.lagP90 ?? 0) * 1000).toFixed(1)} ms
+                {((eventLoop?.lagP50 ?? 0) * 1000).toFixed(1)} ms /{" "}
+                {((eventLoop?.lagP90 ?? 0) * 1000).toFixed(1)} ms
               </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Active Handles</span>
-              <span className="font-mono font-medium">{handles?.activeHandlesTotal ?? 0}</span>
+              <span className="font-mono font-medium">
+                {handles?.activeHandlesTotal ?? 0}
+              </span>
             </div>
             <div className="flex justify-between border-b pb-2">
-              <span className="text-muted-foreground">Open File Descriptors</span>
+              <span className="text-muted-foreground">
+                Open File Descriptors
+              </span>
               <span className="font-mono font-medium">
                 {handles?.openFds ?? 0} / {handles?.maxFds ?? 0}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Active Requests</span>
-              <span className="font-mono font-medium">{handles?.activeRequestsTotal ?? 0}</span>
+              <span className="font-mono font-medium">
+                {handles?.activeRequestsTotal ?? 0}
+              </span>
             </div>
           </CardContent>
         </Card>

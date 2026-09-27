@@ -8,6 +8,4 @@ export class KubehostService extends ApiService {
   async getMetricsDashboard() {
     return this.get(`/metrics`)
   }
-
-
 }

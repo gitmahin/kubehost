@@ -14,8 +14,7 @@ export class ProjectService extends ApiService {
     return this.post("/", { project_name: projectName })
   }
 
-
-    async deleteProject(projectName: ProjectNameInputType) {
+  async deleteProject(projectName: ProjectNameInputType) {
     return this.delete("/", { project_name: projectName })
   }
   async listAllProjects() {
@@ -58,6 +57,4 @@ export class ProjectService extends ApiService {
   }: ProjectAndDeploymentNameInputType) {
     return this.get(`/${project_name}/dash/${deployment_name}`)
   }
-
-
 }

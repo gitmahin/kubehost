@@ -9,7 +9,8 @@ export class ProjectZSchema extends ZodBase {
     .regex(
       /^[a-zA-Z0-9-]+$/,
       "Only letters, numbers, and hyphens are allowed - no spaces or special characters"
-    ).optional()
+    )
+    .optional()
 
   static deploymentName = z
     .string()
@@ -72,11 +73,11 @@ export class ProjectZSchema extends ZodBase {
     }
   }
 
-  static applicationSchema = this.applicationBaseSchema.superRefine(
-    this.hostRequiredForPublic
-  ).extend({
+  static applicationSchema = this.applicationBaseSchema
+    .superRefine(this.hostRequiredForPublic)
+    .extend({
       deploymentName: this.deploymentName,
-  })
+    })
 
   static applicationDeploymentServerSchema = this.applicationBaseSchema
     .omit({ envVars: true })
@@ -86,16 +87,19 @@ export class ProjectZSchema extends ZodBase {
       secretEnvs: this.envMapDataSchema,
       nonSecretEnvs: this.envMapDataSchema,
     })
-    .superRefine(this.hostRequiredForPublic).required({
-      projectName: true
+    .superRefine(this.hostRequiredForPublic)
+    .required({
+      projectName: true,
     })
 
-  static projectAndDeploymentNameSchema = z.object({
-    project_name: this.projectName,
-    deployment_name: this.deploymentName,
-  }).required({
-    project_name: true
-  })
+  static projectAndDeploymentNameSchema = z
+    .object({
+      project_name: this.projectName,
+      deployment_name: this.deploymentName,
+    })
+    .required({
+      project_name: true,
+    })
 }
 
 export type ProjectNameInputType = z.infer<typeof ProjectZSchema.projectName>
