@@ -1,105 +1,299 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
+import { observer } from "mobx-react"
 import {
-  Rocket,
-  Plus,
-  Layers,
   Cpu,
-  ShieldCheck,
-  ArrowRight,
-  ExternalLink,
-  HelpCircle,
+  HardDrive,
+  MemoryStick,
+  Activity,
+  Clock,
+  Server,
 } from "lucide-react"
+import Skeleton from "react-loading-skeleton"
 
 import {
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  Badge,
-} from "@workspace/ui/components"
+} from "@workspace/ui/components/card"
+import { Progress } from "@workspace/ui/components"
+import { Badge } from "@workspace/ui/components/badge"
+import { metricsStore } from "@/stores"
+import { formatBytes } from "@/utils/formatBytes"
+import { formatUptime } from "@/utils/formatUptime"
+import { MetricsDashLoader } from "@/components/skeleton"
 
 export const Route = createFileRoute("/_pathlessMain/")({
-  component: RouteComponent,
+  component: observer(RouteComponent),
 })
 
 function RouteComponent() {
-  const navigate = useNavigate()
+  const { metrics, heapUsedPercent, isLoading, isError, errorMessage, getProgressBarColor } =
+    metricsStore
+
+  if (isLoading || (!metrics && !isError)) {
+    return <MetricsDashLoader/>
+  }
+
+  if (isError) {
+    return (
+      <div className="mx-auto max-w-7xl p-6 md:p-8">
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="text-destructive">Failed to Load Metrics</CardTitle>
+            <CardDescription>{errorMessage || "An error occurred"}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  const procMem = metrics?.memory?.process
+  const sysMem = metrics?.memory?.system
+  const cpu = metrics?.cpu
+  const storage = metrics?.storage
+  const processInfo = metrics?.process
+  const eventLoop = metrics?.eventLoop
+  const handles = metrics?.handles
 
   return (
     <div className="mx-auto max-w-7xl flex-1 space-y-6 p-6 md:p-8">
-      {/* Main Hero Empty State */}
-      <Card className="border-dashed bg-gradient-to-b from-card to-muted/20">
-        <CardContent className="flex flex-col items-center justify-center px-4 py-16 text-center">
-          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner">
-            <Rocket className="h-8 w-8" />
-          </div>
+      {/* Header */}
+      <div className="flex flex-col gap-2 border-b pb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">System Metrics</h1>
+          <p className="text-sm text-muted-foreground">
+            Updates every 4 seconds
+          </p>
+        </div>
 
-          <CardTitle className="max-w-lg text-2xl font-bold tracking-tight sm:text-3xl">
-            Rapidly deploy your application in seconds
-          </CardTitle>
-          <CardDescription className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground">
-            Just provide your Docker image - our platform handles networking,
-            ingress rules, and scaling complexities behind the scenes.
-          </CardDescription>
+      </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Button
-              variant="outline"
-              size="lg"
-              className="px-6"
-              onClick={() => {
-                navigate({
-                  to: "/projects/create",
-                })
-              }}
-            >
-              Create New Project
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Value Propositions / Managed Features */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Primary KPI Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* CPU */}
         <Card>
-          <CardHeader className="pb-2">
-            <Layers className="mb-2 h-5 w-5 text-primary" />
-            <CardTitle className="text-base font-semibold">
-              Kubernetes Powered
-            </CardTitle>
-            <CardDescription>
-              Built on enterprise Kubernetes without requiring YAML manifests,
-              kubectl commands, or cluster tuning.
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
+            <Cpu className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {cpu?.totalSeconds?.toFixed(3) ?? "0.000"}s
+            </div>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+  {cpu?.cores && (
+    <Badge variant="outline" >
+      {cpu.cores} Cores
+    </Badge>
+  )}
+  <Badge variant="secondary" >
+    User: {cpu?.userSeconds?.toFixed(3) ?? "0"}s
+  </Badge>
+  <Badge variant="secondary" >
+    Sys: {cpu?.systemSeconds?.toFixed(3) ?? "0"}s
+  </Badge>
+</div>
+          </CardContent>
         </Card>
 
+        {/* Process Memory */}
         <Card>
-          <CardHeader className="pb-2">
-            <Cpu className="mb-2 h-5 w-5 text-primary" />
-            <CardTitle className="text-base font-semibold">
-              Automated Networking
-            </CardTitle>
-            <CardDescription>
-              Load balancing and ingress routes are provisioned and configured
-              automatically.
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Process Memory</CardTitle>
+            <MemoryStick className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {procMem?.residentMB ?? 0} MB
+            </div>
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Heap ({formatBytes(procMem?.heapUsedBytes)})</span>
+                <span>{heapUsedPercent.toFixed(1)}%</span>
+              </div>
+              <Progress value={heapUsedPercent} className="h-1.5" indicatorClassName={getProgressBarColor(heapUsedPercent ?? 0)} />
+            </div>
+          </CardContent>
         </Card>
 
+        {/* Storage */}
         <Card>
-          <CardHeader className="pb-2">
-            <ShieldCheck className="mb-2 h-5 w-5 text-primary" />
-            <CardTitle className="text-base font-semibold">
-              Zero-Config Docker
-            </CardTitle>
-            <CardDescription>
-              Pass your image URI from Docker Hub or standard registries and hit
-              deploy-we handle the rest.
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Storage</CardTitle>
+            <HardDrive className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {storage?.usedGB?.toFixed(1) ?? 0} / {storage?.totalGB?.toFixed(1) ?? 0} GB
+            </div>
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Used</span>
+                <span>{storage?.usedPercent ?? 0}%</span>
+              </div>
+         <Progress
+  value={storage?.usedPercent ?? 0}
+  className="h-1.5"
+  indicatorClassName={getProgressBarColor(storage?.usedPercent ?? 0)}
+/>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Uptime */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Uptime</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatUptime(processInfo?.uptimeSeconds)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Started: {processInfo?.startTimeSeconds ? new Date(processInfo.startTimeSeconds * 1000).toLocaleTimeString() : "N/A"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detailed Diagnostic Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Process Memory Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MemoryStick className="h-4 w-4 text-primary" /> Process Memory
+            </CardTitle>
+            <CardDescription>Node.js engine memory footprint</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Resident (RSS)</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.residentBytes)}</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Virtual Memory</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.virtualBytes)}</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Heap Used</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.heapUsedBytes)}</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Heap Total</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.heapTotalBytes)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">External Memory</span>
+              <span className="font-mono font-medium">{formatBytes(procMem?.externalBytes)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Memory Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Server className="h-4 w-4 text-primary" /> System Memory
+            </CardTitle>
+            <CardDescription>Host RAM statistics</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Total Memory</span>
+              <span className="font-mono font-medium">{sysMem?.totalGB?.toFixed(2) ?? 0} GB</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Used Memory</span>
+              <span className="font-mono font-medium">{sysMem?.usedGB?.toFixed(2) ?? 0} GB</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Free Memory</span>
+              <span className="font-mono font-medium">{sysMem?.freeGB?.toFixed(2) ?? 0} GB</span>
+            </div>
+            <div className="space-y-1 pt-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>System Usage</span>
+                <span>{sysMem?.usedPercent ?? 0}%</span>
+              </div>
+              <Progress value={sysMem?.usedPercent ?? 0} className="h-1.5" indicatorClassName={getProgressBarColor(sysMem?.usedPercent ?? 0)} />
+            </div>
+          </CardContent>
+        </Card>
+
+{/* Disk usage */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <HardDrive className="h-4 w-4 text-primary" /> System Disk Volume
+            </CardTitle>
+            <CardDescription>Host Disk capacity statistics</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Total Capacity</span>
+              <span className="font-mono font-medium">
+                {storage?.totalGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.totalBytes)})
+              </span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Used Space</span>
+              <span className="font-mono font-medium">
+                {storage?.usedGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.usedBytes)})
+              </span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Free Space</span>
+              <span className="font-mono font-medium">
+                {storage?.freeGB?.toFixed(1) ?? 0} GB ({formatBytes(storage?.freeBytes)})
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Available Space</span>
+              <span className="font-mono font-medium">
+                {formatBytes(storage?.availableBytes)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Event Loop & Handles */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Activity className="h-4 w-4 text-primary" /> Event Loop & I/O
+            </CardTitle>
+            <CardDescription>File descriptors and loop lag</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Current Lag</span>
+              <span className="font-mono font-medium">{((eventLoop?.lagSeconds ?? 0) * 1000).toFixed(2)} ms</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">p50 / p90 Latency</span>
+              <span className="font-mono font-medium">
+                {((eventLoop?.lagP50 ?? 0) * 1000).toFixed(1)} ms / {((eventLoop?.lagP90 ?? 0) * 1000).toFixed(1)} ms
+              </span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Active Handles</span>
+              <span className="font-mono font-medium">{handles?.activeHandlesTotal ?? 0}</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-muted-foreground">Open File Descriptors</span>
+              <span className="font-mono font-medium">
+                {handles?.openFds ?? 0} / {handles?.maxFds ?? 0}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Active Requests</span>
+              <span className="font-mono font-medium">{handles?.activeRequestsTotal ?? 0}</span>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </div>

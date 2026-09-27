@@ -21,6 +21,7 @@ import {
   Box,
   LayoutGrid,
   Database,
+  Gauge,
 } from "lucide-react"
 
 import { useQuery } from "@tanstack/react-query"
@@ -86,6 +87,10 @@ export const Sidebar = () => {
       </div>
 
       <nav className="flex flex-col gap-1 px-3">
+               <Link to={"/"} className={linkClass(pathname == "/")}>
+              <Gauge className="h-4 w-4 shrink-0" />
+              Dashboard
+            </Link>
         <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
           <CollapsibleTrigger
             className={`${linkClass(isProjectsSectionActive)} w-full justify-between`}
