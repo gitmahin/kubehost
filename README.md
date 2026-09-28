@@ -7,6 +7,7 @@ Just provide your Docker image - kubehost handles networking, load balancing and
 [Show me how to deploy my cloud infrastructure and applications](#quick-start)
 
 ![alt text](image.png)
+![alt text](image_2.png)
 
 We've all been there: it's a hackathon, your app is ready, and now you're
 burning your last hours setting up a server just to make it live. KubeHost
