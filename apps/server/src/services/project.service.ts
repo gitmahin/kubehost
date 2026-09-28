@@ -9,7 +9,11 @@ import { K8sService } from "./k8s.service"
 import { ApiError } from "@/libs"
 import { getSystemCustomErrorMsgByKey } from "@/events"
 import type { ApplicationCreateInputType } from "@repo/zod"
-import type { DeploymentDashboard, DeploymentInfo, DeploymentMetrics } from "@repo/types"
+import type {
+  DeploymentDashboard,
+  DeploymentInfo,
+  DeploymentMetrics,
+} from "@repo/types"
 import { memoryToMi } from "@/utils/memoryToMi"
 import {
   cpuToCore,

@@ -22,6 +22,11 @@
 //   return value * 1000
 // }
 
+/**
+ * TODO: Build it perfectly so that before system crush it can handle the pod
+ * management to cool down system resources
+ */
+
 // @injectable()
 // export class AutoScaleService {
 //   constructor(

@@ -94,14 +94,11 @@ type IngressRule = {
 }
 
 type ReplicasType = {
-
   desired: number
   ready: number
   available: number
   updated: number
-
 }
-
 
 export type DashboardData = {
   deployment?: {
@@ -156,7 +153,9 @@ function formatMemory(value?: string | null) {
   const unit = Object.keys(units).find((u) => value.endsWith(u))
   const bytes = unit ? num * units[unit]! : num
   const mib = bytes / (1024 * 1024)
-  return mib >= 1024 ? `${(mib / 1024).toFixed(2)} GiB` : `${mib.toFixed(1)} MiB`
+  return mib >= 1024
+    ? `${(mib / 1024).toFixed(2)} GiB`
+    : `${mib.toFixed(1)} MiB`
 }
 
 function getUtilizationColor(pct: number) {
@@ -174,7 +173,10 @@ function MetricBar({ metric }: { metric: ResourceMetric }) {
     <div className="flex items-center gap-2">
       <div className="h-2 w-28 overflow-hidden rounded-full bg-zinc-800">
         <div
-          className={cn("h-full rounded-full transition-all", getUtilizationColor(pct))}
+          className={cn(
+            "h-full rounded-full transition-all",
+            getUtilizationColor(pct)
+          )}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -207,47 +209,42 @@ type PodRestartsChartPropsType = {
   podRestartData: any
 }
 
-export const PodRestartsChart = ({ podRestartData }: PodRestartsChartPropsType) => {
-  return <Card className="border-zinc-800 bg-zinc-900/40">
-    <CardHeader>
-      <CardTitle className="text-base text-zinc-100">
-        Pod Restarts
-      </CardTitle>
-      <CardDescription className="text-xs text-zinc-500">
-        Total restart counts across active pods
-      </CardDescription>
-    </CardHeader>
-    <CardContent className="h-[220px]">
-      <ChartContainer
-        config={restartChartConfig}
-        className="h-full w-full"
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={podRestartData}
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-          >
-            <XAxis
-              dataKey="name"
-              stroke="#71717a"
-              fontSize={11}
-              tickLine={false}
-            />
-            <YAxis
-              stroke="#71717a"
-              fontSize={11}
-              tickLine={false}
-              allowDecimals={false}
-            />
-            <RechartsTooltip content={<ChartTooltipContent />} />
-            <Bar
-              dataKey="restarts"
-              fill="#3b82f6"
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartContainer>
-    </CardContent>
-  </Card>
+export const PodRestartsChart = ({
+  podRestartData,
+}: PodRestartsChartPropsType) => {
+  return (
+    <Card className="border-zinc-800 bg-zinc-900/40">
+      <CardHeader>
+        <CardTitle className="text-base text-zinc-100">Pod Restarts</CardTitle>
+        <CardDescription className="text-xs text-zinc-500">
+          Total restart counts across active pods
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="h-[220px]">
+        <ChartContainer config={restartChartConfig} className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={podRestartData}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <XAxis
+                dataKey="name"
+                stroke="#71717a"
+                fontSize={11}
+                tickLine={false}
+              />
+              <YAxis
+                stroke="#71717a"
+                fontSize={11}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <RechartsTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="restarts" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  )
 }

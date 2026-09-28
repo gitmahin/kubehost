@@ -33,7 +33,7 @@ import { getClientEnv } from "@/utils/env"
 import { metricsStore } from "@/stores"
 import { getCpuOptions, getMemoryOptions } from "@/utils/get-resources"
 import { observer } from "mobx-react"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 type SearchParams = {
   project_name?: string
@@ -88,20 +88,21 @@ function RouteComponent() {
       path: "/",
     },
   })
-
+  const defaultsApplied = useRef(false)
   useEffect(() => {
-  if (metricsStore.metrics) {
+    if (defaultsApplied.current) return
+    if (!metricsStore.metrics) return
+
     const cpuOpts = getCpuOptions(metricsStore.metrics)
     const memOpts = getMemoryOptions(metricsStore.metrics)
 
-    if (cpuOpts.length > 0) {
-      setValue("cpu", Number(cpuOpts[1].value))
-    }
-    if (memOpts.length > 0) {
-      setValue("memory", memOpts[2]?.value)
-    }
-  }
-}, [metricsStore.metrics, setValue])
+    if (cpuOpts.length === 0 && memOpts.length === 0) return
+
+    if (cpuOpts[1]) setValue("cpu", Number(cpuOpts[1].value))
+    if (memOpts[2]) setValue("memory", memOpts[2].value)
+
+    defaultsApplied.current = true
+  }, [metricsStore.metrics, setValue])
 
   const visibility = useWatch({ control, name: "visibility" })
 
@@ -304,8 +305,6 @@ function RouteComponent() {
                   <FieldError>{errors.replicas.message}</FieldError>
                 )}
               </Field>
-
-
             </FieldGroup>
           </FieldSet>
 
@@ -314,7 +313,8 @@ function RouteComponent() {
           <FieldSet>
             <FieldLegend>Resource Allocations</FieldLegend>
             <FieldDescription>
-              Configure CPU and Memory limits derived directly from available system resources
+              Configure CPU and Memory limits derived directly from available
+              system resources
             </FieldDescription>
             <FieldGroup>
               <Field orientation="horizontal">
@@ -327,15 +327,20 @@ function RouteComponent() {
                     render={({ field }) => (
                       <Select
                         disabled={createDeploymentMutation.isPending}
-                     onValueChange={(val) => field.onChange(Number(val))}
-            value={field.value !== undefined ? String(field.value) : ""}
+                        onValueChange={(val) => field.onChange(Number(val))}
+                        value={
+                          field.value !== undefined ? String(field.value) : ""
+                        }
                       >
                         <SelectTrigger id="cpu" className="w-full">
                           <SelectValue placeholder="Select CPU" />
                         </SelectTrigger>
                         <SelectContent>
                           {getCpuOptions(metricsStore.metrics).map((opt) => (
-                            <SelectItem key={opt.value} value={Number(opt.value)}>
+                            <SelectItem
+                              key={opt.value}
+                              value={Number(opt.value)}
+                            >
                               {opt.label}
                             </SelectItem>
                           ))}
@@ -371,7 +376,9 @@ function RouteComponent() {
                       </Select>
                     )}
                   />
-                  {errors.memory && <FieldError>{errors.memory.message}</FieldError>}
+                  {errors.memory && (
+                    <FieldError>{errors.memory.message}</FieldError>
+                  )}
                 </Field>
               </Field>
             </FieldGroup>
@@ -465,8 +472,6 @@ function RouteComponent() {
           )}
 
           <FieldSeparator />
-
-
 
           <FieldSet>
             <FieldLegend>Environment Variables</FieldLegend>

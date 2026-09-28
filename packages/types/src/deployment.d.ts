@@ -41,7 +41,6 @@ export type DeploymentDashboard = {
   }>
 }
 
-
 export interface ResourceMetric {
   usage: string | null
   limit: string | null
@@ -67,39 +66,39 @@ export interface DeploymentMetrics {
 }
 
 export type DeploymentInfo = {
-  name?: string;
-  namespace?: string;
+  name?: string
+  namespace?: string
 
   image: {
-    name?: string;
-    pullPolicy?: string;
-  };
+    name?: string
+    pullPolicy?: string
+  }
 
   container: {
-    name?: string;
-    port?: number;
-    command?: string[];
-    args?: string[];
-    workingDir?: string;
-  };
+    name?: string
+    port?: number
+    command?: string[]
+    args?: string[]
+    workingDir?: string
+  }
 
   resources: {
-    requests?: Record<string, string>;
-    limits?: Record<string, string>;
-  };
+    requests?: Record<string, string>
+    limits?: Record<string, string>
+  }
 
   replicas: {
-    desired: number;
-    ready: number;
-    available: number;
-    updated: number;
-  };
+    desired: number
+    ready: number
+    available: number
+    updated: number
+  }
 
-  status: "Running" | "Not Ready";
+  status: "Running" | "Not Ready"
 
-  statusMessage?: string;
+  statusMessage?: string
 
-  createdAt?: Date;
+  createdAt?: Date
 
-  labels?: Record<string, string>;
-};
+  labels?: Record<string, string>
+}

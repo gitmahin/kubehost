@@ -76,50 +76,47 @@ const replicaChartConfig = {
   },
 } satisfies ChartConfig
 
-
-
 type ReplicaHealthChartPropsType = {
   replicaData: any
 }
-export const ReplicaHealthChart = ({replicaData}: ReplicaHealthChartPropsType) => {
-  return    <Card className="border-zinc-800 bg-zinc-900/40">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">
-              Replica Health Distribution
-            </CardTitle>
-            <CardDescription className="text-xs text-zinc-500">
-              Ratio of ready vs unready pod instances
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[220px]">
-            <ChartContainer
-              config={replicaChartConfig}
-              className="h-full w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={replicaData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={4}
-                    shape={(props: any) => {
-                      const { fill, payload, ...sectorProps } = props
-                      return (
-                        <Sector {...sectorProps} fill={payload?.fill || fill} />
-                      )
-                    }}
-                  />
-                  <RechartsTooltip content={<ChartTooltipContent />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+export const ReplicaHealthChart = ({
+  replicaData,
+}: ReplicaHealthChartPropsType) => {
+  return (
+    <Card className="border-zinc-800 bg-zinc-900/40">
+      <CardHeader>
+        <CardTitle className="text-base text-zinc-100">
+          Replica Health Distribution
+        </CardTitle>
+        <CardDescription className="text-xs text-zinc-500">
+          Ratio of ready vs unready pod instances
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="h-[220px]">
+        <ChartContainer config={replicaChartConfig} className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={replicaData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={80}
+                paddingAngle={4}
+                shape={(props: any) => {
+                  const { fill, payload, ...sectorProps } = props
+                  return (
+                    <Sector {...sectorProps} fill={payload?.fill || fill} />
+                  )
+                }}
+              />
+              <RechartsTooltip content={<ChartTooltipContent />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  )
 }
-
-

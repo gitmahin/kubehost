@@ -13,9 +13,7 @@ export function cpuToCore(cpu: string | number): number {
 }
 
 export function memoryToHumanRead(memory: string | number): string {
-  const value = typeof memory === "number"
-    ? memory
-    : parseFloat(memory)
+  const value = typeof memory === "number" ? memory : parseFloat(memory)
 
   const input = String(memory).trim().toLowerCase()
 

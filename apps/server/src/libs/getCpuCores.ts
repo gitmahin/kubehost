@@ -1,5 +1,5 @@
 import os from "node:os"
 
 export const getCpuCores = () => {
-    return os.cpus().length
+  return os.cpus().length
 }

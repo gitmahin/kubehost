@@ -1,11 +1,8 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import {
-  Pencil,
-  Trash2,
-} from "lucide-react"
+import { Pencil, RefreshCw, Trash2 } from "lucide-react"
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
 import {
@@ -18,6 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@workspace/ui/components"
 import { ProjectService } from "@repo/services"
 import { getClientEnv } from "@/utils/env"
@@ -29,6 +31,7 @@ import { PodRestartsChart } from "./PodRestartsChart"
 import type { IngressRule } from "./OverviewCard"
 import OverviewCard from "./OverviewCard"
 import { LoadingSkeleton } from "./LoadingSkeleton"
+import { AUTO_REFRESH_OPTIONS } from "@/constants"
 
 export const Route = createFileRoute(
   "/_pathlessMain/projects/$project_id/depl/$depl_id/"
@@ -57,14 +60,11 @@ type Service = {
   ports?: ServicePort[]
 }
 
-
 type ReplicasType = {
-
   desired: number
   ready: number
   available: number
   updated: number
-
 }
 
 export type DashboardData = {
@@ -83,25 +83,46 @@ function RouteComponent() {
   const projectService = new ProjectService(
     getClientEnv("VITE_API_SERVER_URL") + "/v1/projects"
   )
+  const [refreshInterval, setRefreshInterval] = useState("4000")
   const { project_id, depl_id } = Route.useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-
+  const [spinning, setSpinning] = useState(false)
   // Fetch dashboard data
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["dashboard", project_id, depl_id],
     queryFn: async () => {
       const res: any = await projectService.getDashboard({
         project_name: project_id,
         deployment_name: depl_id,
       })
-      return (res?.data?.data ?? res?.data) as DashboardData & { metrics: DeploymentMetrics }
+      return (res?.data?.data ?? res?.data) as DashboardData & {
+        metrics: DeploymentMetrics
+      }
     },
     enabled: !!project_id && !!depl_id,
-    refetchInterval: 4000,
+    refetchInterval:
+      refreshInterval === "off" ? false : Number(refreshInterval),
     refetchIntervalInBackground: false,
   })
+
+  const spinTimer = useRef<any>(null)
+
+  useEffect(() => {
+    if (!isFetching) return
+
+    setSpinning(true)
+    if (spinTimer.current) clearTimeout(spinTimer.current)
+    spinTimer.current = setTimeout(() => setSpinning(false), 500)
+  }, [isFetching])
+
+  // Clear the timer only on unmount
+  useEffect(() => {
+    return () => {
+      if (spinTimer.current) clearTimeout(spinTimer.current)
+    }
+  }, [])
 
   const metrics = data?.metrics
 
@@ -165,8 +186,6 @@ function RouteComponent() {
   const service = data?.service
   const pods = data?.pods ?? []
 
-
-
   return (
     <div className="flex w-full flex-col gap-6 p-6 text-zinc-100">
       {/* Header & Quick Actions */}
@@ -186,6 +205,48 @@ function RouteComponent() {
           <p className="font-mono text-xs text-zinc-500">
             {deployment?.image ?? "-"}
           </p>
+        </div>
+
+        {/* Refresh Controls */}
+        <div className="flex items-center justify-between gap-2">
+          <Select
+            value={refreshInterval}
+            onValueChange={(val) => {
+              if (val) setRefreshInterval(val)
+            }}
+          >
+            <SelectTrigger className="w-[180px] border-zinc-700 bg-zinc-900 text-zinc-300">
+              <SelectValue>
+                {(val: string) =>
+                  val === "off"
+                    ? "Auto refresh: Off"
+                    : `Every ${AUTO_REFRESH_OPTIONS.find((o) => o.value === val)?.label}`
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {AUTO_REFRESH_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.value === "off"
+                    ? "Auto refresh: Off"
+                    : `Every ${opt.label}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <RefreshCw
+              className={`mr-1.5 h-4 w-4 ${spinning || isFetching ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -256,7 +317,11 @@ function RouteComponent() {
       </div>
 
       {/* Top Overview Cards */}
-      <OverviewCard deployment={deployment} service={service} uniqueIngress={uniqueIngress} />
+      <OverviewCard
+        deployment={deployment}
+        service={service}
+        uniqueIngress={uniqueIngress}
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ReplicaHealthChart replicaData={replicaData} />

@@ -6,7 +6,11 @@ import * as k8s from "@kubernetes/client-node"
 import { injectable } from "inversify"
 import { parseCpuToNano } from "@/utils/parseCpuToNano"
 import { parseMemoryToBytes } from "@/utils/parseMemoryToBytes"
-import type { ContainerMetrics, DeploymentMetrics, PodMetrics } from "@repo/types"
+import type {
+  ContainerMetrics,
+  DeploymentMetrics,
+  PodMetrics,
+} from "@repo/types"
 
 export type EnvMapDataType = {
   [key: string]: {
@@ -486,137 +490,140 @@ export class K8sService {
     }
   }
 
-async getDeploymentMetrics(
-  namespace: string,
-  deploymentName: string
-): Promise<DeploymentMetrics> {
-  console.log(
-    `Fetching metrics for deployment: ${deploymentName} in namespace: ${namespace}...\n`
-  )
-
-  // Get Deployment
-  const deployRes = await this.appsApi.readNamespacedDeployment({
-    name: deploymentName,
-    namespace,
-  })
-
-  const deploymentContainers = deployRes.spec?.template?.spec?.containers ?? []
-
-  if (deploymentContainers.length === 0) {
-    throw new Error(`No containers found in deployment "${deploymentName}"`)
-  }
-
-  // Build Deployment label selector
-  const matchLabels = deployRes.spec?.selector?.matchLabels ?? {}
-
-  const labelSelector = Object.entries(matchLabels)
-    .map(([key, value]) => `${key}=${value}`)
-    .join(",")
-
-  // Get Pod metrics
-  const metricsRes = (await this.customObjectsApi.listNamespacedCustomObject({
-    group: "metrics.k8s.io",
-    version: "v1beta1",
-    namespace,
-    plural: "pods",
-    labelSelector,
-  })) as { items?: any[] }
-
-  // v1.x of @kubernetes/client-node returns the object directly (no .body)
-  const podMetricsList = metricsRes?.items ?? []
-
-  if (podMetricsList.length === 0) {
+  async getDeploymentMetrics(
+    namespace: string,
+    deploymentName: string
+  ): Promise<DeploymentMetrics> {
     console.log(
-      `No pod metrics found for selector "${labelSelector}" in namespace "${namespace}". ` +
-        "Pods may still be starting, or metrics-server may not be running."
+      `Fetching metrics for deployment: ${deploymentName} in namespace: ${namespace}...\n`
     )
 
-    return {
-      pods: [],
-      totalCpuMillicores: 0,
-      totalMemoryBytes: 0,
-      totalMemoryMiB: 0,
+    // Get Deployment
+    const deployRes = await this.appsApi.readNamespacedDeployment({
+      name: deploymentName,
+      namespace,
+    })
+
+    const deploymentContainers =
+      deployRes.spec?.template?.spec?.containers ?? []
+
+    if (deploymentContainers.length === 0) {
+      throw new Error(`No containers found in deployment "${deploymentName}"`)
     }
-  }
 
-  let totalCpuNano = 0
-  let totalMemoryBytes = 0
+    // Build Deployment label selector
+    const matchLabels = deployRes.spec?.selector?.matchLabels ?? {}
 
-  const pods: PodMetrics[] = podMetricsList.map((pod: any) => {
-    const containers: any[] = pod.containers ?? []
+    const labelSelector = Object.entries(matchLabels)
+      .map(([key, value]) => `${key}=${value}`)
+      .join(",")
 
-    const containerMetrics: ContainerMetrics[] = containers.map(
-      (containerMetric: any) => {
-        const cpuUsage: string | undefined = containerMetric.usage?.cpu
-        const memoryUsage: string | undefined = containerMetric.usage?.memory
+    // Get Pod metrics
+    const metricsRes = (await this.customObjectsApi.listNamespacedCustomObject({
+      group: "metrics.k8s.io",
+      version: "v1beta1",
+      namespace,
+      plural: "pods",
+      labelSelector,
+    })) as { items?: any[] }
 
-        // Find the same container in Deployment spec
-        const containerSpec = deploymentContainers.find(
-          (container) => container.name === containerMetric.name
-        )
+    // v1.x of @kubernetes/client-node returns the object directly (no .body)
+    const podMetricsList = metricsRes?.items ?? []
 
-        const cpuLimit = containerSpec?.resources?.limits?.cpu
-        const memoryLimit = containerSpec?.resources?.limits?.memory
+    if (podMetricsList.length === 0) {
+      console.log(
+        `No pod metrics found for selector "${labelSelector}" in namespace "${namespace}". ` +
+          "Pods may still be starting, or metrics-server may not be running."
+      )
 
-        // CPU
-        let cpuUtilization: number | null = null
-
-        if (cpuUsage) {
-          const usageNano = parseCpuToNano(cpuUsage)
-          totalCpuNano += usageNano
-
-          if (cpuLimit) {
-            const limitNano = parseCpuToNano(cpuLimit)
-            cpuUtilization = limitNano > 0 ? (usageNano / limitNano) * 100 : null
-          }
-        }
-
-        // Memory
-        let memoryUtilization: number | null = null
-
-        if (memoryUsage) {
-          const usageBytes = parseMemoryToBytes(memoryUsage)
-          totalMemoryBytes += usageBytes
-
-          if (memoryLimit) {
-            const limitBytes = parseMemoryToBytes(memoryLimit)
-            memoryUtilization =
-              limitBytes > 0 ? (usageBytes / limitBytes) * 100 : null
-          }
-        }
-
-        return {
-          name: containerMetric.name,
-
-          cpu: {
-            usage: cpuUsage ?? null,
-            limit: cpuLimit ?? null,
-            utilization: cpuUtilization,
-          },
-
-          memory: {
-            usage: memoryUsage ?? null,
-            limit: memoryLimit ?? null,
-            utilization: memoryUtilization,
-          },
-        }
+      return {
+        pods: [],
+        totalCpuMillicores: 0,
+        totalMemoryBytes: 0,
+        totalMemoryMiB: 0,
       }
-    )
+    }
+
+    let totalCpuNano = 0
+    let totalMemoryBytes = 0
+
+    const pods: PodMetrics[] = podMetricsList.map((pod: any) => {
+      const containers: any[] = pod.containers ?? []
+
+      const containerMetrics: ContainerMetrics[] = containers.map(
+        (containerMetric: any) => {
+          const cpuUsage: string | undefined = containerMetric.usage?.cpu
+          const memoryUsage: string | undefined = containerMetric.usage?.memory
+
+          // Find the same container in Deployment spec
+          const containerSpec = deploymentContainers.find(
+            (container) => container.name === containerMetric.name
+          )
+
+          const cpuLimit = containerSpec?.resources?.limits?.cpu
+          const memoryLimit = containerSpec?.resources?.limits?.memory
+
+          // CPU
+          let cpuUtilization: number | null = null
+
+          if (cpuUsage) {
+            const usageNano = parseCpuToNano(cpuUsage)
+            totalCpuNano += usageNano
+
+            if (cpuLimit) {
+              const limitNano = parseCpuToNano(cpuLimit)
+              cpuUtilization =
+                limitNano > 0 ? (usageNano / limitNano) * 100 : null
+            }
+          }
+
+          // Memory
+          let memoryUtilization: number | null = null
+
+          if (memoryUsage) {
+            const usageBytes = parseMemoryToBytes(memoryUsage)
+            totalMemoryBytes += usageBytes
+
+            if (memoryLimit) {
+              const limitBytes = parseMemoryToBytes(memoryLimit)
+              memoryUtilization =
+                limitBytes > 0 ? (usageBytes / limitBytes) * 100 : null
+            }
+          }
+
+          return {
+            name: containerMetric.name,
+
+            cpu: {
+              usage: cpuUsage ?? null,
+              limit: cpuLimit ?? null,
+              utilization: cpuUtilization,
+            },
+
+            memory: {
+              usage: memoryUsage ?? null,
+              limit: memoryLimit ?? null,
+              utilization: memoryUtilization,
+            },
+          }
+        }
+      )
+
+      return {
+        name: pod.metadata?.name,
+        containers: containerMetrics,
+      }
+    })
 
     return {
-      name: pod.metadata?.name,
-      containers: containerMetrics,
+      pods,
+      totalCpuMillicores: totalCpuNano / 1_000_000,
+      totalMemoryBytes,
+      totalMemoryMiB: totalMemoryBytes / (1024 * 1024),
     }
-  })
-
-  return {
-    pods,
-    totalCpuMillicores: totalCpuNano / 1_000_000,
-    totalMemoryBytes,
-    totalMemoryMiB: totalMemoryBytes / (1024 * 1024),
   }
-}
 
+  // TODO: Fix the unknown error
   // async getAllContainerUsage() {
   //   // Get actual Pod usage from Metrics Server
   //   const metricsRes =

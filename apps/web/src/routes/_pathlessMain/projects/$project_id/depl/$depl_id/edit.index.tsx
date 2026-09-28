@@ -24,7 +24,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-    Select,
+  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -127,7 +127,7 @@ function RouteComponent() {
         host: deploymentData.host ?? "",
         path: deploymentData.path ?? "/",
         cpu: deploymentData.cpu ?? "1",
-        memory: deploymentData.memory ?? "0.5MB"
+        memory: deploymentData.memory ?? "0.5MB",
       })
     }
   }, [deploymentData, reset])
@@ -351,12 +351,13 @@ function RouteComponent() {
             </FieldGroup>
           </FieldSet>
 
-           <FieldSeparator />
+          <FieldSeparator />
 
           <FieldSet>
             <FieldLegend>Resource Allocations</FieldLegend>
             <FieldDescription>
-              Configure CPU and Memory limits derived directly from available system resources
+              Configure CPU and Memory limits derived directly from available
+              system resources
             </FieldDescription>
             <FieldGroup>
               <Field orientation="horizontal">
@@ -413,7 +414,9 @@ function RouteComponent() {
                       </Select>
                     )}
                   />
-                  {errors.memory && <FieldError>{errors.memory.message}</FieldError>}
+                  {errors.memory && (
+                    <FieldError>{errors.memory.message}</FieldError>
+                  )}
                 </Field>
               </Field>
             </FieldGroup>
