@@ -1,19 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { Badge, Button } from "@workspace/ui/components"
 import { useNavigate } from "@tanstack/react-router"
-
 import { cn } from "@workspace/ui/lib/utils"
 import { getStatusStyle } from "@/utils/statusStyle"
 import Skeleton from "react-loading-skeleton"
 import { CirclePlus } from "lucide-react"
 import { ProjectService } from "@repo/services"
 import { getClientEnv } from "@/utils/env"
-
-type Deployment = {
-  name?: string
-  namespace?: string
-  status?: string
-}
+import type { DeploymentInfo } from "@repo/types"
 
 export const ProjectSidebar = ({
   project_id,
@@ -32,7 +26,7 @@ export const ProjectSidebar = ({
     queryKey: ["deployments", project_id],
     queryFn: async () => {
       const res: any = await projectService.getAllDeployments(project_id!)
-      return (res?.data.data ?? []) as Deployment[]
+      return (res?.data.data ?? []) as DeploymentInfo[]
     },
     enabled: !!project_id,
     refetchInterval: 4000,
@@ -42,7 +36,7 @@ export const ProjectSidebar = ({
   // console.log(deployments)
 
   return (
-    <aside className="sticky top-[55px] h-[calc(100vh-55px)] w-[250px] border-r bg-zinc-900/30 px-3 py-6">
+    <aside className="sticky top-[55px] h-[calc(100vh-55px)] w-[300px] border-r bg-zinc-900/30 px-3 py-6">
       <Button
         className={"w-full justify-start"}
         onClick={() => {
@@ -104,7 +98,7 @@ export const ProjectSidebar = ({
                   variant="outline"
                   className={cn(getStatusStyle(deployment.status))}
                 >
-                  {deployment.status}
+                  {deployment.replicas.ready} / {deployment.replicas.desired}
                 </Badge>
               </Button>
             )

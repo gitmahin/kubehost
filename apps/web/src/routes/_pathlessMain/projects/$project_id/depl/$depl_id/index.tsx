@@ -1,46 +1,13 @@
-import { useMemo, useState, useEffect, type ReactNode } from "react"
+import { useMemo, useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import Skeleton from "react-loading-skeleton"
-import "react-loading-skeleton/dist/skeleton.css"
 import { toast } from "sonner"
 import {
   Pencil,
   Trash2,
-  Server,
-  Globe,
-  Boxes,
-  ExternalLink,
 } from "lucide-react"
-import {
-  PieChart,
-  Pie,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Sector,
-} from "recharts"
-
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@workspace/ui/components/card"
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@workspace/ui/components/table"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,16 +19,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@workspace/ui/components"
-import {
-  ChartContainer,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@workspace/ui/components/chart"
-import { cn } from "@workspace/ui/lib/utils"
 import { ProjectService } from "@repo/services"
 import { getClientEnv } from "@/utils/env"
-import type { DeploymentMetrics, ResourceMetric } from "@repo/types"
+import type { DeploymentMetrics } from "@repo/types"
 import { PodResourceMetrics } from "./PodResourceMetrics"
+import { PodInstances } from "./PodInstances"
+import { ReplicaHealthChart } from "./ReplicaHealthChart"
+import { PodRestartsChart } from "./PodRestartsChart"
+import type { IngressRule } from "./OverviewCard"
+import OverviewCard from "./OverviewCard"
+import { LoadingSkeleton } from "./LoadingSkeleton"
 
 export const Route = createFileRoute(
   "/_pathlessMain/projects/$project_id/depl/$depl_id/"
@@ -90,117 +57,27 @@ type Service = {
   ports?: ServicePort[]
 }
 
-type IngressRule = {
-  name?: string
-  host?: string
-  path?: string
-  pathType?: string
+
+type ReplicasType = {
+
+  desired: number
+  ready: number
+  available: number
+  updated: number
+
 }
 
-type DashboardData = {
+export type DashboardData = {
   deployment?: {
     name?: string
     namespace?: string
     image?: string
-    replicas?: {
-      desired: number
-      ready: number
-      available: number
-      updated: number
-    }
+    replicas?: ReplicasType
   }
   service?: Service
   ingress?: IngressRule[]
   pods?: Pod[]
 }
-
-const statusStyles: Record<string, string> = {
-  Running: "border-green-600/40 text-green-500 bg-green-500/10",
-  Pending: "border-yellow-600/40 text-yellow-500 bg-yellow-500/10",
-  Failed: "border-red-600/40 text-red-500 bg-red-500/10",
-  Succeeded: "border-blue-600/40 text-blue-500 bg-blue-500/10",
-}
-
-function getStatusStyle(status?: string) {
-  return (
-    statusStyles[status ?? ""] ??
-    "border-zinc-600/40 text-zinc-400 bg-zinc-500/10"
-  )
-}
-
-function formatCpu(value?: string | null) {
-  if (!value) return "-"
-  const num = parseFloat(value)
-  let millicores: number
-  if (value.endsWith("n")) millicores = num / 1_000_000
-  else if (value.endsWith("u")) millicores = num / 1_000
-  else if (value.endsWith("m")) millicores = num
-  else millicores = num * 1000
-  return `${millicores.toFixed(millicores < 10 ? 1 : 0)}m`
-}
-
-function formatMemory(value?: string | null) {
-  if (!value) return "-"
-  const num = parseFloat(value)
-  const units: Record<string, number> = {
-    Ki: 1024,
-    Mi: 1024 ** 2,
-    Gi: 1024 ** 3,
-    Ti: 1024 ** 4,
-    K: 1000,
-    M: 1000 ** 2,
-    G: 1000 ** 3,
-    T: 1000 ** 4,
-  }
-  const unit = Object.keys(units).find((u) => value.endsWith(u))
-  const bytes = unit ? num * units[unit]! : num
-  const mib = bytes / (1024 * 1024)
-  return mib >= 1024 ? `${(mib / 1024).toFixed(2)} GiB` : `${mib.toFixed(1)} MiB`
-}
-
-function getUtilizationColor(pct: number) {
-  if (pct >= 90) return "bg-red-500"
-  if (pct >= 70) return "bg-yellow-500"
-  return "bg-green-500"
-}
-
-function MetricBar({ metric }: { metric: ResourceMetric }) {
-  if (metric.utilization === null) {
-    return <span className="text-xs text-zinc-500">No limit set</span>
-  }
-  const pct = Math.min(100, Math.max(0, metric.utilization))
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-2 w-28 overflow-hidden rounded-full bg-zinc-800">
-        <div
-          className={cn("h-full rounded-full transition-all", getUtilizationColor(pct))}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="w-12 text-right font-mono text-xs text-zinc-300">
-        {metric.utilization.toFixed(1)}%
-      </span>
-    </div>
-  )
-}
-
-const replicaChartConfig = {
-  ready: {
-    label: "Ready",
-    color: "#22c55e",
-  },
-  unready: {
-    label: "Unready",
-    color: "#eab308",
-  },
-} satisfies ChartConfig
-
-const restartChartConfig = {
-  restarts: {
-    label: "Restarts",
-    color: "#3b82f6",
-  },
-} satisfies ChartConfig
 
 function RouteComponent() {
   const projectService = new ProjectService(
@@ -222,7 +99,7 @@ function RouteComponent() {
       return (res?.data?.data ?? res?.data) as DashboardData & { metrics: DeploymentMetrics }
     },
     enabled: !!project_id && !!depl_id,
-    refetchInterval: 2000,
+    refetchInterval: 4000,
     refetchIntervalInBackground: false,
   })
 
@@ -281,76 +158,14 @@ function RouteComponent() {
   }, [data?.pods, depl_id])
 
   if (isLoading) {
-    return (
-      <div className="flex w-full flex-col gap-6 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <Skeleton
-              width={180}
-              height={28}
-              baseColor="#27272a"
-              highlightColor="#3f3f46"
-            />
-            <Skeleton
-              width={120}
-              height={16}
-              baseColor="#27272a"
-              highlightColor="#3f3f46"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Skeleton
-              width={80}
-              height={36}
-              borderRadius={6}
-              baseColor="#27272a"
-              highlightColor="#3f3f46"
-            />
-            <Skeleton
-              width={80}
-              height={36}
-              borderRadius={6}
-              baseColor="#27272a"
-              highlightColor="#3f3f46"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="border-zinc-800 bg-zinc-900/40">
-              <CardHeader className="p-4">
-                <Skeleton
-                  width={120}
-                  height={16}
-                  baseColor="#27272a"
-                  highlightColor="#3f3f46"
-                />
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2 p-4 pt-0">
-                <Skeleton
-                  width={160}
-                  height={24}
-                  baseColor="#27272a"
-                  highlightColor="#3f3f46"
-                />
-                <Skeleton
-                  width={200}
-                  height={14}
-                  baseColor="#27272a"
-                  highlightColor="#3f3f46"
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
+    return <LoadingSkeleton />
   }
 
   const deployment = data?.deployment
   const service = data?.service
   const pods = data?.pods ?? []
+
+
 
   return (
     <div className="flex w-full flex-col gap-6 p-6 text-zinc-100">
@@ -441,246 +256,17 @@ function RouteComponent() {
       </div>
 
       {/* Top Overview Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="border-zinc-800 bg-zinc-900/40">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">
-              Replicas
-            </CardTitle>
-            <Boxes className="h-4 w-4 text-zinc-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-zinc-50">
-              {deployment?.replicas?.ready ?? 0} /{" "}
-              {deployment?.replicas?.desired ?? 0}
-            </div>
-            <p className="mt-1 text-xs text-zinc-500">
-              {deployment?.replicas?.available ?? 0} available,{" "}
-              {deployment?.replicas?.updated ?? 0} updated
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-800 bg-zinc-900/40">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">
-              Service IP
-            </CardTitle>
-            <Server className="h-4 w-4 text-zinc-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="font-mono text-lg font-semibold text-zinc-50">
-              {service?.clusterIP ?? "No Service"}
-            </div>
-            <div className="mt-1 flex gap-2">
-              {service?.ports?.map((p, idx) => (
-                <Badge
-                  key={idx}
-                  variant="secondary"
-                  className="bg-zinc-800 text-[10px] text-zinc-300"
-                >
-                  {p.port}:{p.targetPort}/{p.protocol}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-800 bg-zinc-900/40">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">
-              Ingress Host
-            </CardTitle>
-            <Globe className="h-4 w-4 text-zinc-500" />
-          </CardHeader>
-          <CardContent>
-            {uniqueIngress.length > 0 ? (
-              <div className="flex flex-col gap-1">
-                {uniqueIngress.map((ing, i) => (
-                  <div
-                    key={`${ing.name ?? i}-${ing.host}`}
-                    className="flex items-center gap-1.5 font-mono text-sm text-blue-400"
-                  >
-                    <a
-                      href={`http://${ing.host}${ing.path ?? ""}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 hover:underline"
-                    >
-                      {ing.host}
-                      {ing.path}
-                      <ExternalLink className="h-3 w-3 text-zinc-500" />
-                    </a>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <span className="text-sm text-zinc-500">
-                No Ingress routing set
-              </span>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Analytics & Charts Section (Wrapped in ClientOnly to fix Hydration Error #419) */}
+      <OverviewCard deployment={deployment} service={service} uniqueIngress={uniqueIngress} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="border-zinc-800 bg-zinc-900/40">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">
-              Replica Health Distribution
-            </CardTitle>
-            <CardDescription className="text-xs text-zinc-500">
-              Ratio of ready vs unready pod instances
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[220px]">
-            <ChartContainer
-              config={replicaChartConfig}
-              className="h-full w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={replicaData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={4}
-                    shape={(props: any) => {
-                      const { fill, payload, ...sectorProps } = props
-                      return (
-                        <Sector {...sectorProps} fill={payload?.fill || fill} />
-                      )
-                    }}
-                  />
-                  <RechartsTooltip content={<ChartTooltipContent />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-800 bg-zinc-900/40">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">
-              Pod Restarts
-            </CardTitle>
-            <CardDescription className="text-xs text-zinc-500">
-              Total restart counts across active pods
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[220px]">
-            <ChartContainer
-              config={restartChartConfig}
-              className="h-full w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={podRestartData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <XAxis
-                    dataKey="name"
-                    stroke="#71717a"
-                    fontSize={11}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    stroke="#71717a"
-                    fontSize={11}
-                    tickLine={false}
-                    allowDecimals={false}
-                  />
-                  <RechartsTooltip content={<ChartTooltipContent />} />
-                  <Bar
-                    dataKey="restarts"
-                    fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+        <ReplicaHealthChart replicaData={replicaData} />
+        <PodRestartsChart podRestartData={podRestartData} />
       </div>
 
       {/* Pod Resource Metrics */}
       <PodResourceMetrics isLoading={isLoading} metrics={metrics!} />
-
       {/* Pod Instances Table */}
-      <Card className="border-zinc-800 bg-zinc-900/40">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base text-zinc-100">Instances</CardTitle>
-            <CardDescription className="text-xs text-zinc-500">
-              Metrics for active runtime containers
-            </CardDescription>
-          </div>
-          <Badge variant="outline" className="border-zinc-700 text-zinc-400">
-            {pods.length} Total Pods
-          </Badge>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border border-zinc-800">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-zinc-800 hover:bg-transparent">
-                  <TableHead className="text-zinc-400">Pod Name</TableHead>
-                  <TableHead className="text-zinc-400">Status</TableHead>
-                  <TableHead className="text-zinc-400">Pod IP</TableHead>
-                  <TableHead className="text-zinc-400">Node</TableHead>
-                  <TableHead className="text-zinc-400">Restarts</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pods.length === 0 ? (
-                  <TableRow className="border-zinc-800">
-                    <TableCell
-                      colSpan={5}
-                      className="py-6 text-center text-sm text-zinc-500"
-                    >
-                      No active pods found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  pods.map((pod) => (
-                    <TableRow
-                      key={pod.name}
-                      className="border-zinc-800/60 hover:bg-zinc-800/30"
-                    >
-                      <TableCell className="font-mono text-xs text-zinc-200">
-                        {pod.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={cn(getStatusStyle(pod.status))}
-                        >
-                          {pod.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-zinc-400">
-                        {pod.podIP ?? "-"}
-                      </TableCell>
-                      <TableCell className="text-xs text-zinc-400">
-                        {pod.nodeName ?? "-"}
-                      </TableCell>
-                      <TableCell className="text-xs text-zinc-400">
-                        {pod.restarts}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <PodInstances pods={pods} />
     </div>
   )
 }

@@ -9,7 +9,7 @@ import { K8sService } from "./k8s.service"
 import { ApiError } from "@/libs"
 import { getSystemCustomErrorMsgByKey } from "@/events"
 import type { ApplicationCreateInputType } from "@repo/zod"
-import type { DeploymentDashboard, DeploymentMetrics } from "@repo/types"
+import type { DeploymentDashboard, DeploymentInfo, DeploymentMetrics } from "@repo/types"
 import { memoryToMi } from "@/utils/memoryToMi"
 import {
   cpuToCore,
@@ -144,7 +144,7 @@ export class ProjectService {
       }))
   }
 
-  async getDeployments(namespace?: string) {
+  async getDeployments(namespace?: string): Promise<DeploymentInfo[]> {
     const response = namespace
       ? await this.k8sService.appsApi.listNamespacedDeployment({ namespace })
       : await this.k8sService.appsApi.listDeploymentForAllNamespaces()
