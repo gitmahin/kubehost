@@ -93,13 +93,11 @@ function RouteComponent() {
 
       {/* Primary KPI Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
-
-            <CardTitle className="text-sm font-medium">CPU Usage </CardTitle>
-            <CardDescription>by kubehost</CardDescription>
+              <CardTitle className="text-sm font-medium">CPU Usage </CardTitle>
+              <CardDescription>by kubehost</CardDescription>
             </div>
             <Cpu className={`h-4 w-4 ${cpuColor}`} />
           </CardHeader>
@@ -110,15 +108,9 @@ function RouteComponent() {
             </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {cpu?.cores && (
-                <Badge variant="outline">
-                  {cpu.cores} Cores
-                </Badge>
-              )}
+              {cpu?.cores && <Badge variant="outline">{cpu.cores} Cores</Badge>}
 
-              <Badge variant="secondary">
-                {cpuUsagePercent.toFixed(1)}%
-              </Badge>
+              <Badge variant="secondary">{cpuUsagePercent.toFixed(1)}%</Badge>
 
               <Badge variant="secondary">
                 User: {cpu?.userSeconds?.toFixed(3) ?? "0"}s
@@ -198,8 +190,8 @@ function RouteComponent() {
               Started:{" "}
               {processInfo?.startTimeSeconds
                 ? new Date(
-                  processInfo.startTimeSeconds * 1000
-                ).toLocaleTimeString()
+                    processInfo.startTimeSeconds * 1000
+                  ).toLocaleTimeString()
                 : "N/A"}
             </p>
           </CardContent>

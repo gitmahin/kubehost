@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -126,7 +126,7 @@ function RouteComponent() {
         host: deploymentData.host ?? "",
         path: deploymentData.path ?? "/",
         cpu: deploymentData.cpu ?? "1",
-        memory: deploymentData.memory ?? "0.5MB",
+        memory: deploymentData.memory ?? "512MB",
       })
     }
   }, [deploymentData, reset])
@@ -180,6 +180,10 @@ function RouteComponent() {
     setPendingValues(values)
     setIsConfirmOpen(true)
   }
+
+  const metrics = metricsStore.metrics
+  const cpuOptions = useMemo(() => getCpuOptions(metrics), [metrics])
+  const memoryOptions = useMemo(() => getMemoryOptions(metrics), [metrics])
 
   const handleConfirmUpdate = () => {
     if (!pendingValues) return
@@ -368,15 +372,22 @@ function RouteComponent() {
                     name="cpu"
                     render={({ field }) => (
                       <Select
-                        disabled={updateDeploymentMutation.isPending}
+                        disabled={
+                          updateDeploymentMutation.isPending ||
+                          !cpuOptions.length
+                        }
                         onValueChange={field.onChange}
-                        value={field.value}
+                        value={field.value ? String(field.value) : ""}
                       >
                         <SelectTrigger id="cpu" className="w-full">
-                          <SelectValue placeholder="Select CPU" />
+                          <SelectValue
+                            placeholder={
+                              cpuOptions.length ? "Select CPU" : "Loading..."
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                          {getCpuOptions(metricsStore.metrics).map((opt) => (
+                          {cpuOptions.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value}>
                               {opt.label}
                             </SelectItem>
@@ -396,15 +407,24 @@ function RouteComponent() {
                     name="memory"
                     render={({ field }) => (
                       <Select
-                        disabled={updateDeploymentMutation.isPending}
+                        disabled={
+                          updateDeploymentMutation.isPending ||
+                          !memoryOptions.length
+                        }
                         onValueChange={field.onChange}
-                        value={field.value}
+                        value={field.value ?? ""}
                       >
                         <SelectTrigger id="memory" className="w-full">
-                          <SelectValue placeholder="Select Memory" />
+                          <SelectValue
+                            placeholder={
+                              memoryOptions.length
+                                ? "Select Memory"
+                                : "Loading..."
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                          {getMemoryOptions(metricsStore.metrics).map((opt) => (
+                          {memoryOptions.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value}>
                               {opt.label}
                             </SelectItem>

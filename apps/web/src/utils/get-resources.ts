@@ -1,75 +1,59 @@
 import type { MetricsResponse } from "@repo/types"
 
-export function getMemoryOptions(metrics: MetricsResponse | null) {
-  const totalGB = metrics?.memory?.system?.totalGB ?? 0
-  if (!totalGB) return []
+type Option = { label: string; value: string }
 
-  const MIN_MB = 512
-  const totalMB = totalGB * 1024
+// trims trailing zeros: 1.50 -> "1.5", 2.00 -> "2"
+const fmt = (n: number) => `${+n.toFixed(2)}`
 
-  const fractions = [0, 0.125, 0.25, 0.5, 0.75, 1]
+export function getCpuOptions(metrics: MetricsResponse | null): Option[] {
+  const totalCores = metrics?.cpu?.cores ?? 0
+  if (!totalCores) return []
 
-  const options: { label: string; value: string }[] = []
-  const seen = new Set<number>()
+  // fixed presets, only those below the system max are kept
+  const presets = [0.15, 0.25, 0.5, 1, 1.15, 1.25, 1.5, 2, 2.5]
 
-  fractions.forEach((fraction) => {
-    const isMax = fraction === 1
+  // then whole cores: 3, 4, 5 ... up to max - 1
+  const wholeCores: number[] = []
+  for (let c = 3; c < totalCores; c++) wholeCores.push(c)
 
-    const calculatedMB = isMax
-      ? Math.round(totalMB)
-      : Math.max(
-          MIN_MB,
-          fraction === 0 ? MIN_MB : Math.round(totalMB * fraction)
-        )
+  const values = [...presets, ...wholeCores]
+    .filter((v) => v < totalCores)
+    .sort((a, b) => a - b)
 
-    if (seen.has(calculatedMB)) return
-    seen.add(calculatedMB)
+  const options: Option[] = values.map((v) => ({
+    label: `${fmt(v)} ${v === 1 ? "Core" : "Cores"}`,
+    value: fmt(v),
+  }))
 
-    const calculatedGB = calculatedMB / 1024
-    const isMB = calculatedMB < 1024
-
-    const label = isMax
-      ? `${totalGB.toFixed(2)} GB (System Max)`
-      : isMB
-        ? `${calculatedMB} MB`
-        : `${calculatedGB.toFixed(2)} GB`
-
-    const value = isMB ? `${calculatedMB}MB` : `${calculatedGB.toFixed(2)}GB`
-
-    options.push({ label, value })
+  options.push({
+    label: `${fmt(totalCores)} ${totalCores === 1 ? "Core" : "Cores"} (System Max)`,
+    value: fmt(totalCores),
   })
 
   return options
 }
 
-export function getCpuOptions(metrics: MetricsResponse | null) {
-  const totalCores = metrics?.cpu?.cores ?? 0
-  if (!totalCores) return []
+export function getMemoryOptions(metrics: MetricsResponse | null): Option[] {
+  const totalGB = metrics?.memory?.system?.totalGB ?? 0
+  if (!totalGB) return []
 
-  const MIN_CPU = 0.25
+  const STEP_GB = 0.5
+  const totalMB = Math.round(totalGB * 1024)
 
-  const fractions = [0, 0.25, 0.5, 0.75, 1]
+  // small presets first, then 1 GB and up in 0.5 GB steps
+  const mbValues: number[] = [250, 512].filter((mb) => mb < totalMB)
+  for (let gb = 1; gb * 1024 < totalMB; gb += STEP_GB) {
+    mbValues.push(Math.round(gb * 1024))
+  }
 
-  const options: { label: string; value: string }[] = []
-
-  fractions.forEach((fraction) => {
-    const coreVal =
-      fraction === 0 ? MIN_CPU : +(totalCores * fraction).toFixed(2)
-
-    if (coreVal < MIN_CPU) return
-
-    const isMax = fraction === 1
-    const label = isMax
-      ? `${totalCores} Cores (System Max)`
-      : `${coreVal} ${coreVal === 1 ? "Core" : "Cores"}`
-
-    options.push({
-      label,
-      value: `${coreVal}`,
-    })
+  const options: Option[] = mbValues.map((mb) => {
+    if (mb < 1024) return { label: `${mb} MB`, value: `${mb}MB` }
+    const g = fmt(mb / 1024)
+    return { label: `${g} GB`, value: `${g}GB` }
   })
 
-  return options.filter(
-    (opt, index, self) => index === self.findIndex((t) => t.value === opt.value)
-  )
+  const maxG = totalGB.toFixed(2)
+  options.push({ label: `${maxG} GB (System Max)`, value: `${maxG}GB` })
+
+  return options
 }

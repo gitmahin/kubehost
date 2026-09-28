@@ -36,7 +36,7 @@ export const ProjectSidebar = ({
   // console.log(deployments)
 
   return (
-    <aside className="sticky top-[55px] shrink-0 h-[calc(100vh-55px)] w-[280px] border-r bg-zinc-900/30 px-3 py-6">
+    <aside className="sticky top-[55px] h-[calc(100vh-55px)] w-[280px] shrink-0 border-r bg-zinc-900/30 px-3 py-6">
       <Button
         className={"w-full justify-start"}
         onClick={() => {

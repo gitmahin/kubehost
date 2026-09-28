@@ -154,7 +154,7 @@ export const PodResourceMetrics = ({
                       <TableCell className="font-mono text-xs text-zinc-200">
                         {pod.name}
                       </TableCell>
-                
+
                       <TableCell className="font-mono text-xs text-zinc-300">
                         {formatCpu(container.cpu.usage)}
                         <span className="text-zinc-500">
