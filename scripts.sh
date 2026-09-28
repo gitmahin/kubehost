@@ -45,7 +45,7 @@ done
 
 # Display Help Information
 printHelp() {
-    echo "KUBEHOST CLI TOOL | v26.3.1"
+    echo "KUBEHOST CLI TOOL | v26.3.2"
     echo "A Bash-based CLI tool for automated Depoylment Infrastructure setup."
     echo ""
     echo "Usage: kubehost [OPTIONS]"

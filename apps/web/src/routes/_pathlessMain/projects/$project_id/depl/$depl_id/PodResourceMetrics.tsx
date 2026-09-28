@@ -115,7 +115,6 @@ export const PodResourceMetrics = ({
             <TableHeader>
               <TableRow className="border-zinc-800 hover:bg-transparent">
                 <TableHead className="text-zinc-400">Pod</TableHead>
-                <TableHead className="text-zinc-400">Container</TableHead>
                 <TableHead className="text-zinc-400">CPU</TableHead>
                 <TableHead className="text-zinc-400">CPU Utilization</TableHead>
                 <TableHead className="text-zinc-400">Memory</TableHead>
@@ -155,9 +154,7 @@ export const PodResourceMetrics = ({
                       <TableCell className="font-mono text-xs text-zinc-200">
                         {pod.name}
                       </TableCell>
-                      <TableCell className="text-xs text-zinc-400">
-                        {container.name}
-                      </TableCell>
+                
                       <TableCell className="font-mono text-xs text-zinc-300">
                         {formatCpu(container.cpu.usage)}
                         <span className="text-zinc-500">

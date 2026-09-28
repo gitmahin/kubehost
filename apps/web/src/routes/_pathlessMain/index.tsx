@@ -67,6 +67,18 @@ function RouteComponent() {
   const eventLoop = metrics?.eventLoop
   const handles = metrics?.handles
 
+  const cpuUsagePercent =
+    cpu?.cores && cpu.totalConsumedCpu != null
+      ? (cpu.totalConsumedCpu / cpu.cores) * 100
+      : 0
+
+  const cpuColor =
+    cpuUsagePercent >= 85
+      ? "text-red-500"
+      : cpuUsagePercent >= 70
+        ? "text-amber-500"
+        : "text-emerald-500"
+
   return (
     <div className="mx-auto max-w-7xl flex-1 space-y-6 p-6 md:p-8">
       {/* Header */}
@@ -81,21 +93,37 @@ function RouteComponent() {
 
       {/* Primary KPI Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* CPU */}
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
-            <Cpu className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {cpu?.totalSeconds?.toFixed(3) ?? "0.000"}s
+            <div>
+
+            <CardTitle className="text-sm font-medium">CPU Usage </CardTitle>
+            <CardDescription>by kubehost</CardDescription>
             </div>
+            <Cpu className={`h-4 w-4 ${cpuColor}`} />
+          </CardHeader>
+
+          <CardContent>
+            <div className={`text-2xl font-bold ${cpuColor}`}>
+              {cpu?.totalConsumedCpu?.toFixed(2) ?? "0.00"} Cores
+            </div>
+
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {cpu?.cores && <Badge variant="outline">{cpu.cores} Cores</Badge>}
+              {cpu?.cores && (
+                <Badge variant="outline">
+                  {cpu.cores} Cores
+                </Badge>
+              )}
+
+              <Badge variant="secondary">
+                {cpuUsagePercent.toFixed(1)}%
+              </Badge>
+
               <Badge variant="secondary">
                 User: {cpu?.userSeconds?.toFixed(3) ?? "0"}s
               </Badge>
+
               <Badge variant="secondary">
                 Sys: {cpu?.systemSeconds?.toFixed(3) ?? "0"}s
               </Badge>
@@ -170,8 +198,8 @@ function RouteComponent() {
               Started:{" "}
               {processInfo?.startTimeSeconds
                 ? new Date(
-                    processInfo.startTimeSeconds * 1000
-                  ).toLocaleTimeString()
+                  processInfo.startTimeSeconds * 1000
+                ).toLocaleTimeString()
                 : "N/A"}
             </p>
           </CardContent>
