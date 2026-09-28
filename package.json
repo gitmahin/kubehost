@@ -1,6 +1,6 @@
 {
   "name": "kubehost",
-  "version": "26.1.1",
+  "version": "26.2.1",
   "private": true,
   "scripts": {
     "build": "turbo build",
