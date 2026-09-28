@@ -47,7 +47,7 @@ const SidebarLinks: SidebarLinkType[] = [
   { icon: Docker, label: "Images", slug: "/images" },
 ]
 
-const APP_VERSION = "v1.0.0"
+const APP_VERSION = "v26.3.2"
 
 const linkClass = (isActive: boolean) =>
   `flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors ${
