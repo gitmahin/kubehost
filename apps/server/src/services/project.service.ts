@@ -341,8 +341,8 @@ export class ProjectService {
                   ],
                   resources: {
                     requests: {
-                      cpu: "250m",
-                      memory: "256Mi",
+                      cpu: "100m",
+                      memory: "128Mi",
                     },
                     limits: {
                       cpu: `${(cpu ?? 1) * 1000}m`,
@@ -496,8 +496,6 @@ export class ProjectService {
 
       secretMapName = response.metadata?.name as string
     }
-
-    console.log("Memory: ", memory)
 
     const updatedDeploymentResponse =
       await this.k8sService.appsApi.replaceNamespacedDeployment({

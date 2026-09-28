@@ -35,6 +35,8 @@ export type MetricsResponse = Partial<{
     systemSeconds: number
     totalSeconds: number
     cores: number
+    totalConsumedCpu: number
+    totalReservedCpu: number
   }
   memory: {
     process: ProcessMemory // from prom-client — this Node process only

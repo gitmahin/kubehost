@@ -490,6 +490,67 @@ export class K8sService {
     }
   }
 
+  async getTotalCpuUsage() {
+    const res = (await this.customObjectsApi.listClusterCustomObject({
+      group: "metrics.k8s.io",
+      version: "v1beta1",
+      plural: "pods",
+    })) as { items?: any[] }
+
+    const pods = res.items ?? []
+
+    let totalCpuNano = 0
+
+    for (const pod of pods) {
+      for (const container of pod.containers ?? []) {
+        const cpu = container.usage?.cpu
+
+        if (cpu) {
+          totalCpuNano += parseCpuToNano(cpu)
+        }
+      }
+    }
+
+    const totalCpuMillicores = totalCpuNano / 1_000_000
+    const totalCpuCores = totalCpuMillicores / 1000
+
+    return Number(totalCpuCores.toFixed(2))
+  }
+
+  async getTotalReservedCpu(): Promise<number> {
+    function parseCpuToMillicores(cpu: string): number {
+      if (cpu.endsWith("m")) {
+        return Number.parseFloat(cpu.slice(0, -1))
+      }
+
+      if (cpu.endsWith("u")) {
+        return Number.parseFloat(cpu.slice(0, -1)) / 1000
+      }
+
+      // Plain number means CPU cores
+      return Number.parseFloat(cpu) * 1000
+    }
+
+    const res = (await this.k8sApi.listPodForAllNamespaces()) as {
+      items?: any[]
+    }
+
+    const pods = res.items ?? []
+
+    let totalCpuMillicores = 0
+
+    for (const pod of pods) {
+      for (const container of pod.spec?.containers ?? []) {
+        const cpuRequest = container.resources?.requests?.cpu
+
+        if (cpuRequest) {
+          totalCpuMillicores += parseCpuToMillicores(cpuRequest)
+        }
+      }
+    }
+    return Number((totalCpuMillicores / 1000).toFixed(2))
+  }
+
   async getDeploymentMetrics(
     namespace: string,
     deploymentName: string

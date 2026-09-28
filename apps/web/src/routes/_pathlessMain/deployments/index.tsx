@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import Skeleton from "react-loading-skeleton"
 import {
@@ -138,14 +138,23 @@ function RouteComponent() {
         header: "Name",
         accessorKey: "name",
         cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="font-medium text-zinc-50">
-              {row.original.name}
-            </span>
-            <span className="text-xs text-zinc-500">
-              {row.original.namespace}
-            </span>
-          </div>
+          <Link
+            to="/projects/$project_id/depl/$depl_id"
+            params={{
+              project_id: row.original.namespace!,
+              depl_id: row.original.name!,
+            }}
+          >
+            {" "}
+            <div className="flex flex-col">
+              <span className="font-medium text-zinc-50">
+                {row.original.name}
+              </span>
+              <span className="text-xs text-zinc-500">
+                {row.original.namespace}
+              </span>
+            </div>{" "}
+          </Link>
         ),
       },
       {

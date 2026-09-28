@@ -16,6 +16,7 @@ import type {
   StorageStats,
 } from "@repo/types"
 import os from "node:os"
+import { K8sService } from "./services"
 /* -------------------------------------------------------------------------- */
 /*                                 Metrics                                    */
 /* -------------------------------------------------------------------------- */
@@ -45,6 +46,9 @@ app.get("/health", async (_, res) => {
 app.get("/api/metrics", async (_req, res) => {
   try {
     const metrics = await register.getMetricsAsJSON()
+    const k8sService = container.get(K8sService)
+    const totalCpu = await k8sService.getTotalCpuUsage()
+    const totalReservedCpu = await k8sService.getTotalReservedCpu()
 
     const getValue = (name: string, labelFilter = {}) => {
       const metric = metrics.find((m) => m.name === name)
@@ -108,6 +112,8 @@ app.get("/api/metrics", async (_req, res) => {
         systemSeconds: getValue("process_cpu_system_seconds_total") ?? 0,
         totalSeconds: getValue("process_cpu_seconds_total") ?? 0,
         cores: getCpuCores(),
+        totalConsumedCpu: totalCpu,
+        totalReservedCpu: totalReservedCpu,
       },
       memory: {
         process: processMemory,

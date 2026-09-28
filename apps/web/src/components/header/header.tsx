@@ -32,11 +32,35 @@ const addNewOptions: AddNewOption[] = [
 ]
 
 export const Header = observer(() => {
-  const { metrics, systemMemoryUsedPercent } = metricsStore
+  const { metrics, systemMemoryUsedPercent, totalConsumedCpu } = metricsStore
 
   const sysMem = metrics?.memory?.system
   const cpu = metrics?.cpu
   const storage = metrics?.storage
+
+  const cpuUsagePercent =
+    cpu?.cores && cpu.totalConsumedCpu != null
+      ? (cpu.totalConsumedCpu / cpu.cores) * 100
+      : 0
+
+  const cpuColor =
+    cpuUsagePercent >= 85
+      ? "text-red-500"
+      : cpuUsagePercent >= 70
+        ? "text-amber-500"
+        : "text-emerald-500"
+
+  const reservedCpuPercent =
+    cpu?.cores && cpu.totalReservedCpu != null
+      ? (cpu.totalReservedCpu / cpu.cores) * 100
+      : 0
+
+  const reservedCpuColor =
+    reservedCpuPercent >= 90
+      ? "text-red-500"
+      : reservedCpuPercent >= 75
+        ? "text-amber-500"
+        : "text-emerald-500"
 
   return (
     <header className="relative sticky top-0 z-50 flex h-[55px] w-full items-center justify-between border-b bg-zinc-950 px-3">
@@ -65,12 +89,29 @@ export const Header = observer(() => {
 
         {/* CPU Usage Badge */}
         <Badge variant="outline" className="shrink-0 gap-1.5">
-          <Cpu className="h-3.5 w-3.5 text-primary" />
+          <Cpu className={`h-3.5 w-3.5 ${cpuColor}`} />
+
           <span>CPU:</span>
-          <span>{cpu?.totalSeconds?.toFixed(2) ?? "0.00"}s</span>
-          {cpu?.cores && (
-            <span className="text-zinc-500">({cpu.cores} Cores)</span>
-          )}
+
+          {/* Current CPU usage */}
+          <span className={`font-medium ${cpuColor}`}>
+            {cpu?.totalConsumedCpu?.toFixed(2) ?? "0.00"} Cores
+          </span>
+
+          <span className="text-zinc-400">({cpuUsagePercent.toFixed(1)}%)</span>
+
+          <span className="text-zinc-400">•</span>
+
+          {/* Reserved CPU */}
+          <span className={`font-medium ${reservedCpuColor}`}>
+            {cpu?.totalReservedCpu?.toFixed(2) ?? "0.00"} Cores
+          </span>
+
+          <span className="text-zinc-400">reserved</span>
+
+          <span className={`font-medium ${reservedCpuColor}`}>
+            ({reservedCpuPercent.toFixed(1)}%)
+          </span>
         </Badge>
       </div>
 

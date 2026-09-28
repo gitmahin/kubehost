@@ -54,6 +54,13 @@ class MetricsStore {
     }
     return "bg-emerald-500"
   }
+
+  get totalConsumedCpu(): number {
+    return this.metrics?.cpu?.totalConsumedCpu ?? 0
+  }
+  get totalReservedCpu(): number {
+    return this.metrics?.cpu?.totalReservedCpu ?? 0
+  }
 }
 
 export const metricsStore = new MetricsStore()
