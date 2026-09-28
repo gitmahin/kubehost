@@ -494,8 +494,6 @@ export class K8sService {
     namespace: string,
     deploymentName: string
   ): Promise<DeploymentMetrics> {
-
-
     // Get Deployment
     const deployRes = await this.appsApi.readNamespacedDeployment({
       name: deploymentName,
@@ -528,7 +526,6 @@ export class K8sService {
     const podMetricsList = metricsRes?.items ?? []
 
     if (podMetricsList.length === 0) {
-
       return {
         pods: [],
         totalCpuMillicores: 0,
