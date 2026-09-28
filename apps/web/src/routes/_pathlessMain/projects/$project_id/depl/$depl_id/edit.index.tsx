@@ -113,7 +113,6 @@ function RouteComponent() {
 
   // Pre-fill form when deployment data is fetched
   useEffect(() => {
-    console.log(deploymentData)
     if (deploymentData) {
       reset({
         deploymentName: deploymentData.deploymentName ?? "",

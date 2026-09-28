@@ -494,9 +494,7 @@ export class K8sService {
     namespace: string,
     deploymentName: string
   ): Promise<DeploymentMetrics> {
-    console.log(
-      `Fetching metrics for deployment: ${deploymentName} in namespace: ${namespace}...\n`
-    )
+
 
     // Get Deployment
     const deployRes = await this.appsApi.readNamespacedDeployment({
@@ -527,14 +525,9 @@ export class K8sService {
       labelSelector,
     })) as { items?: any[] }
 
-    // v1.x of @kubernetes/client-node returns the object directly (no .body)
     const podMetricsList = metricsRes?.items ?? []
 
     if (podMetricsList.length === 0) {
-      console.log(
-        `No pod metrics found for selector "${labelSelector}" in namespace "${namespace}". ` +
-          "Pods may still be starting, or metrics-server may not be running."
-      )
 
       return {
         pods: [],
