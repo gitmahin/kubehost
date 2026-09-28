@@ -45,8 +45,7 @@ done
 
 # Display Help Information
 printHelp() {
-
-    echo "KUBEHOST CLI TOOL | v26.1.1"
+    echo "KUBEHOST CLI TOOL | v26.2.1"
     echo "A Bash-based CLI tool for automated Depoylment Infrastructure setup."
     echo ""
     echo "Usage: kubehost [OPTIONS]"
@@ -126,6 +125,18 @@ deleteKubeHostFn() {
   echo "kubehost has been deleted."
 }
 
+enable_addon() {
+  local addon="$1"
+  local label="$2"
+
+  if minikube addons list | grep -q "| ${addon} .*| enabled ✅"; then
+    echo "${label} already configured ✅"
+  else
+    echo "Enabling ${label}..."
+    minikube addons enable "${addon}"
+  fi
+}
+
 createContainers() {
   local apiServerUrl="$1"
 
@@ -182,12 +193,8 @@ createContainers() {
     -e VITE_API_SERVER_URL="$apiServerUrl" \
     dockermahin/kubehost-client:latest 
 
-  if minikube addons list | grep -q "| ingress .*| enabled ✅"; then
-    echo "Ingress controller already configured ✅"
-  else
-    echo "Enabling Ingress addon..."
-    minikube addons enable ingress
-  fi
+  enable_addon "ingress" "Ingress controller"
+  enable_addon "metrics-server" "Metrics server"
 
   # Allow binding to ports down to 80 without root
   echo "Configuring unprivileged port binding..."

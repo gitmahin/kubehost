@@ -24,6 +24,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@workspace/ui/components"
 import { ProjectZSchema } from "@repo/zod"
 import type {
@@ -34,11 +39,14 @@ import { EnvVarRow } from "@/components/deployments"
 import { EditFormLoader } from "@/components/skeleton"
 import { ProjectService } from "@repo/services"
 import { getClientEnv } from "@/utils/env"
+import { getCpuOptions, getMemoryOptions } from "@/utils/get-resources"
+import { observer } from "mobx-react"
+import { metricsStore } from "@/stores"
 
 export const Route = createFileRoute(
   "/_pathlessMain/projects/$project_id/depl/$depl_id/edit/"
 )({
-  component: RouteComponent,
+  component: observer(RouteComponent),
 })
 
 export type SecretMapDataType = {
@@ -97,13 +105,14 @@ function RouteComponent() {
       envVars: [],
       visibility: "private",
       host: "",
+      cpu: 1,
+      memory: "512MB",
       path: "/",
     },
   })
 
   // Pre-fill form when deployment data is fetched
   useEffect(() => {
-    console.log(deploymentData)
     if (deploymentData) {
       reset({
         deploymentName: deploymentData.deploymentName ?? "",
@@ -116,6 +125,8 @@ function RouteComponent() {
         visibility: deploymentData.visibility ?? "private",
         host: deploymentData.host ?? "",
         path: deploymentData.path ?? "/",
+        cpu: deploymentData.cpu ?? "1",
+        memory: deploymentData.memory ?? "0.5MB",
       })
     }
   }, [deploymentData, reset])
@@ -335,6 +346,77 @@ function RouteComponent() {
                 {errors.replicas && (
                   <FieldError>{errors.replicas.message}</FieldError>
                 )}
+              </Field>
+            </FieldGroup>
+          </FieldSet>
+
+          <FieldSeparator />
+
+          <FieldSet>
+            <FieldLegend>Resource Allocations</FieldLegend>
+            <FieldDescription>
+              Configure CPU and Memory limits derived directly from available
+              system resources
+            </FieldDescription>
+            <FieldGroup>
+              <Field orientation="horizontal">
+                {/* CPU Selector */}
+                <Field data-invalid={!!errors.cpu}>
+                  <FieldLabel htmlFor="cpu">CPU Allocation</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="cpu"
+                    render={({ field }) => (
+                      <Select
+                        disabled={updateDeploymentMutation.isPending}
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger id="cpu" className="w-full">
+                          <SelectValue placeholder="Select CPU" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getCpuOptions(metricsStore.metrics).map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.cpu && <FieldError>{errors.cpu.message}</FieldError>}
+                </Field>
+
+                {/* Memory Selector */}
+                <Field data-invalid={!!errors.memory}>
+                  <FieldLabel htmlFor="memory">Memory Allocation</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="memory"
+                    render={({ field }) => (
+                      <Select
+                        disabled={updateDeploymentMutation.isPending}
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger id="memory" className="w-full">
+                          <SelectValue placeholder="Select Memory" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getMemoryOptions(metricsStore.metrics).map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.memory && (
+                    <FieldError>{errors.memory.message}</FieldError>
+                  )}
+                </Field>
               </Field>
             </FieldGroup>
           </FieldSet>

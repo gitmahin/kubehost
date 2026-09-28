@@ -9,7 +9,16 @@ import { K8sService } from "./k8s.service"
 import { ApiError } from "@/libs"
 import { getSystemCustomErrorMsgByKey } from "@/events"
 import type { ApplicationCreateInputType } from "@repo/zod"
-import type { DeploymentDashboard } from "@repo/types"
+import type {
+  DeploymentDashboard,
+  DeploymentInfo,
+  DeploymentMetrics,
+} from "@repo/types"
+import { memoryToMi } from "@/utils/memoryToMi"
+import {
+  cpuToCore,
+  memoryToHumanRead,
+} from "@/utils/convertResourcetoHumanRead"
 
 export type DeploymentEditData = {
   deploymentName: string
@@ -32,6 +41,8 @@ export type DeploymentEditData = {
     value: string
     isSecret: boolean
   }[]
+  cpu: number
+  memory: string
 }
 
 type CreateDeploymentParams = {
@@ -43,6 +54,8 @@ type CreateDeploymentParams = {
   visibility: ApplicationCreateInputType["visibility"]
   replicas: number
   labelName: string
+  cpu: number
+  memory: string
 }
 
 type CreateServiceParams = {
@@ -135,7 +148,7 @@ export class ProjectService {
       }))
   }
 
-  async getDeployments(namespace?: string) {
+  async getDeployments(namespace?: string): Promise<DeploymentInfo[]> {
     const response = namespace
       ? await this.k8sService.appsApi.listNamespacedDeployment({ namespace })
       : await this.k8sService.appsApi.listDeploymentForAllNamespaces()
@@ -219,6 +232,8 @@ export class ProjectService {
     servicePort,
     visibility,
     path,
+    cpu,
+    memory,
   }: CreateDeploymentParams &
     CreateServiceParams &
     CreateSecretMapParams &
@@ -324,6 +339,16 @@ export class ProjectService {
                       }
                     }),
                   ],
+                  resources: {
+                    requests: {
+                      cpu: "250m",
+                      memory: "256Mi",
+                    },
+                    limits: {
+                      cpu: `${(cpu ?? 1) * 1000}m`,
+                      memory: memoryToMi(memory ?? "2GB"),
+                    },
+                  },
                 },
               ],
             },
@@ -403,6 +428,8 @@ export class ProjectService {
     servicePort,
     visibility,
     path,
+    cpu,
+    memory,
   }: CreateDeploymentParams &
     CreateSecretMapParams &
     CreateServiceParams &
@@ -470,6 +497,8 @@ export class ProjectService {
       secretMapName = response.metadata?.name as string
     }
 
+    console.log("Memory: ", memory)
+
     const updatedDeploymentResponse =
       await this.k8sService.appsApi.replaceNamespacedDeployment({
         name: deploymentName,
@@ -513,6 +542,12 @@ export class ProjectService {
                         }
                       }),
                     ],
+                    resources: {
+                      limits: {
+                        cpu: `${(cpu ?? 1) * 1000}m`,
+                        memory: memoryToMi(memory ?? "2GB"),
+                      },
+                    },
                   },
                 ],
               },
@@ -636,7 +671,7 @@ export class ProjectService {
   async getDeploymentDashboard(
     namespace: string,
     deploymentName: string
-  ): Promise<DeploymentDashboard | null> {
+  ): Promise<(DeploymentDashboard & { metrics: DeploymentMetrics }) | null> {
     const [deploymentResponse, serviceResponse, ingressResponse, podResponse] =
       await Promise.all([
         this.k8sService.appsApi.readNamespacedDeployment({
@@ -709,6 +744,11 @@ export class ProjectService {
       )
     )
 
+    const metrics = await this.k8sService.getDeploymentMetrics(
+      namespace,
+      deploymentName
+    )
+
     return {
       deployment: {
         name: deployment.metadata?.name,
@@ -734,7 +774,7 @@ export class ProjectService {
         : undefined,
 
       ingress,
-
+      metrics,
       pods: pods.map((pod) => ({
         name: pod.metadata?.name,
         status: pod.status?.phase,
@@ -882,6 +922,12 @@ export class ProjectService {
     // Service port
     const portBinding = service?.spec?.ports?.[0]?.port ?? 80
 
+    // Resource limits
+    const cpu = cpuToCore(container.resources?.limits?.cpu ?? "1000m")
+    const memory = memoryToHumanRead(
+      container.resources?.limits?.memory ?? "512Mi"
+    )
+
     return {
       deploymentName: deployment.metadata?.name ?? deploymentName,
       projectName: namespace,
@@ -894,6 +940,8 @@ export class ProjectService {
       host,
       path,
       envVars,
+      cpu,
+      memory,
     }
   }
 }

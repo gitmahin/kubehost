@@ -61,7 +61,7 @@ export function RouteComponent() {
         []) as Deployment[]
     },
     refetchInterval: 4000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
   })
 
   const columns: ColumnDef<Deployment>[] = [

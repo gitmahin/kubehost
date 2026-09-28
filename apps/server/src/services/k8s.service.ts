@@ -4,6 +4,13 @@ import { getSystemCustomErrorMsgByKey } from "@/events"
 import { ApiError } from "@/libs"
 import * as k8s from "@kubernetes/client-node"
 import { injectable } from "inversify"
+import { parseCpuToNano } from "@/utils/parseCpuToNano"
+import { parseMemoryToBytes } from "@/utils/parseMemoryToBytes"
+import type {
+  ContainerMetrics,
+  DeploymentMetrics,
+  PodMetrics,
+} from "@repo/types"
 
 export type EnvMapDataType = {
   [key: string]: {
@@ -52,6 +59,7 @@ export class K8sService {
   public k8sApi
   public appsApi
   public networkingApi
+  public customObjectsApi
   public static FIELD_MANAGER: string = "kubehost"
   constructor() {
     this.kc = new k8s.KubeConfig()
@@ -81,6 +89,7 @@ export class K8sService {
     this.k8sApi = this.kc.makeApiClient(k8s.CoreV1Api)
     this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api)
     this.networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api)
+    this.customObjectsApi = this.kc.makeApiClient(k8s.CustomObjectsApi)
   }
 
   async listAllPods(namespace: string) {
@@ -480,4 +489,221 @@ export class K8sService {
       if (error?.code !== 404) throw error
     }
   }
+
+  async getDeploymentMetrics(
+    namespace: string,
+    deploymentName: string
+  ): Promise<DeploymentMetrics> {
+
+
+    // Get Deployment
+    const deployRes = await this.appsApi.readNamespacedDeployment({
+      name: deploymentName,
+      namespace,
+    })
+
+    const deploymentContainers =
+      deployRes.spec?.template?.spec?.containers ?? []
+
+    if (deploymentContainers.length === 0) {
+      throw new Error(`No containers found in deployment "${deploymentName}"`)
+    }
+
+    // Build Deployment label selector
+    const matchLabels = deployRes.spec?.selector?.matchLabels ?? {}
+
+    const labelSelector = Object.entries(matchLabels)
+      .map(([key, value]) => `${key}=${value}`)
+      .join(",")
+
+    // Get Pod metrics
+    const metricsRes = (await this.customObjectsApi.listNamespacedCustomObject({
+      group: "metrics.k8s.io",
+      version: "v1beta1",
+      namespace,
+      plural: "pods",
+      labelSelector,
+    })) as { items?: any[] }
+
+    const podMetricsList = metricsRes?.items ?? []
+
+    if (podMetricsList.length === 0) {
+
+      return {
+        pods: [],
+        totalCpuMillicores: 0,
+        totalMemoryBytes: 0,
+        totalMemoryMiB: 0,
+      }
+    }
+
+    let totalCpuNano = 0
+    let totalMemoryBytes = 0
+
+    const pods: PodMetrics[] = podMetricsList.map((pod: any) => {
+      const containers: any[] = pod.containers ?? []
+
+      const containerMetrics: ContainerMetrics[] = containers.map(
+        (containerMetric: any) => {
+          const cpuUsage: string | undefined = containerMetric.usage?.cpu
+          const memoryUsage: string | undefined = containerMetric.usage?.memory
+
+          // Find the same container in Deployment spec
+          const containerSpec = deploymentContainers.find(
+            (container) => container.name === containerMetric.name
+          )
+
+          const cpuLimit = containerSpec?.resources?.limits?.cpu
+          const memoryLimit = containerSpec?.resources?.limits?.memory
+
+          // CPU
+          let cpuUtilization: number | null = null
+
+          if (cpuUsage) {
+            const usageNano = parseCpuToNano(cpuUsage)
+            totalCpuNano += usageNano
+
+            if (cpuLimit) {
+              const limitNano = parseCpuToNano(cpuLimit)
+              cpuUtilization =
+                limitNano > 0 ? (usageNano / limitNano) * 100 : null
+            }
+          }
+
+          // Memory
+          let memoryUtilization: number | null = null
+
+          if (memoryUsage) {
+            const usageBytes = parseMemoryToBytes(memoryUsage)
+            totalMemoryBytes += usageBytes
+
+            if (memoryLimit) {
+              const limitBytes = parseMemoryToBytes(memoryLimit)
+              memoryUtilization =
+                limitBytes > 0 ? (usageBytes / limitBytes) * 100 : null
+            }
+          }
+
+          return {
+            name: containerMetric.name,
+
+            cpu: {
+              usage: cpuUsage ?? null,
+              limit: cpuLimit ?? null,
+              utilization: cpuUtilization,
+            },
+
+            memory: {
+              usage: memoryUsage ?? null,
+              limit: memoryLimit ?? null,
+              utilization: memoryUtilization,
+            },
+          }
+        }
+      )
+
+      return {
+        name: pod.metadata?.name,
+        containers: containerMetrics,
+      }
+    })
+
+    return {
+      pods,
+      totalCpuMillicores: totalCpuNano / 1_000_000,
+      totalMemoryBytes,
+      totalMemoryMiB: totalMemoryBytes / (1024 * 1024),
+    }
+  }
+
+  // TODO: Fix the unknown error
+  // async getAllContainerUsage() {
+  //   // Get actual Pod usage from Metrics Server
+  //   const metricsRes =
+  //     await this.customObjectsApi.listClusterCustomObject({
+  //       group: "metrics.k8s.io",
+  //       version: "v1beta1",
+  //       plural: "pods",
+  //     })
+
+  //   const podMetricsList =
+  //     (metricsRes as any)?.items ??
+  //     (metricsRes as any)?.body?.items ??
+  //     []
+
+  //   let totalCpuNano = 0
+  //   let totalMemoryBytes = 0
+
+  //   const containers = []
+
+  //   for (const pod of podMetricsList) {
+  //     const namespace = pod.metadata?.namespace
+  //     const podName = pod.metadata?.name
+
+  //     for (const container of pod.containers ?? []) {
+  //       const cpuUsage = container.usage?.cpu
+  //       const memoryUsage = container.usage?.memory
+
+  //       if (!cpuUsage || !memoryUsage) {
+  //         continue
+  //       }
+
+  //       const cpuNano = parseCpuToNano(cpuUsage)
+  //       const memoryBytes = parseMemoryToBytes(memoryUsage)
+
+  //       totalCpuNano += cpuNano
+  //       totalMemoryBytes += memoryBytes
+
+  //       containers.push({
+  //         namespace,
+  //         pod: podName,
+  //         container: container.name,
+
+  //         cpu: {
+  //           usage: cpuUsage,
+  //           nanocores: cpuNano,
+  //           millicores: cpuNano / 1_000_000,
+  //           cores: cpuNano / 1_000_000_000,
+  //         },
+
+  //         memory: {
+  //           usage: memoryUsage,
+  //           bytes: memoryBytes,
+  //           MiB: memoryBytes / (1024 * 1024),
+  //           GiB: memoryBytes / (1024 * 1024 * 1024),
+  //         },
+  //       })
+  //     }
+  //   }
+
+  //   const totalCpuCores =
+  //     totalCpuNano / 1_000_000_000
+
+  //   const totalCpuMillicores =
+  //     totalCpuNano / 1_000_000
+
+  //   const totalMemoryMiB =
+  //     totalMemoryBytes / (1024 * 1024)
+
+  //   const totalMemoryGiB =
+  //     totalMemoryBytes / (1024 * 1024 * 1024)
+
+  //   return {
+  //     containers,
+
+  //     total: {
+  //       cpu: {
+  //         nanocores: totalCpuNano,
+  //         millicores: totalCpuMillicores,
+  //         cores: totalCpuCores,
+  //       },
+
+  //       memory: {
+  //         bytes: totalMemoryBytes,
+  //         MiB: totalMemoryMiB,
+  //         GiB: totalMemoryGiB,
+  //       },
+  //     },
+  //   }
+  // }
 }

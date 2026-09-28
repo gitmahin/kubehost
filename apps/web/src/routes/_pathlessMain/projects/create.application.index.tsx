@@ -15,6 +15,11 @@ import {
   FieldSeparator,
   FieldSet,
   Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@workspace/ui/components"
 import { ProjectZSchema } from "@repo/zod"
 import type {
@@ -24,6 +29,11 @@ import type {
 import { EnvVarRow } from "@/components/deployments"
 import { ProjectService } from "@repo/services"
 import { getClientEnv } from "@/utils/env"
+
+import { metricsStore } from "@/stores"
+import { getCpuOptions, getMemoryOptions } from "@/utils/get-resources"
+import { observer } from "mobx-react"
+import { useEffect, useRef } from "react"
 
 type SearchParams = {
   project_name?: string
@@ -35,7 +45,7 @@ export const Route = createFileRoute(
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
     project_name: (search.project_name as string) ?? "",
   }),
-  component: RouteComponent,
+  component: observer(RouteComponent),
 })
 
 export type SecretMapDataType = {
@@ -71,11 +81,28 @@ function RouteComponent() {
       portBinding: 80,
       replicas: 1,
       envVars: [],
+      cpu: 1,
+      memory: "512MB",
       visibility: "private",
       host: "",
       path: "/",
     },
   })
+  const defaultsApplied = useRef(false)
+  useEffect(() => {
+    if (defaultsApplied.current) return
+    if (!metricsStore.metrics) return
+
+    const cpuOpts = getCpuOptions(metricsStore.metrics)
+    const memOpts = getMemoryOptions(metricsStore.metrics)
+
+    if (cpuOpts.length === 0 && memOpts.length === 0) return
+
+    if (cpuOpts[1]) setValue("cpu", Number(cpuOpts[1].value))
+    if (memOpts[2]) setValue("memory", memOpts[2].value)
+
+    defaultsApplied.current = true
+  }, [metricsStore.metrics, setValue])
 
   const visibility = useWatch({ control, name: "visibility" })
 
@@ -277,6 +304,82 @@ function RouteComponent() {
                 {errors.replicas && (
                   <FieldError>{errors.replicas.message}</FieldError>
                 )}
+              </Field>
+            </FieldGroup>
+          </FieldSet>
+
+          <FieldSeparator />
+
+          <FieldSet>
+            <FieldLegend>Resource Allocations</FieldLegend>
+            <FieldDescription>
+              Configure CPU and Memory limits derived directly from available
+              system resources
+            </FieldDescription>
+            <FieldGroup>
+              <Field orientation="horizontal">
+                {/* CPU Selector */}
+                <Field data-invalid={!!errors.cpu}>
+                  <FieldLabel htmlFor="cpu">CPU Allocation</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="cpu"
+                    render={({ field }) => (
+                      <Select
+                        disabled={createDeploymentMutation.isPending}
+                        onValueChange={(val) => field.onChange(Number(val))}
+                        value={
+                          field.value !== undefined ? String(field.value) : ""
+                        }
+                      >
+                        <SelectTrigger id="cpu" className="w-full">
+                          <SelectValue placeholder="Select CPU" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getCpuOptions(metricsStore.metrics).map((opt) => (
+                            <SelectItem
+                              key={opt.value}
+                              value={Number(opt.value)}
+                            >
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.cpu && <FieldError>{errors.cpu.message}</FieldError>}
+                </Field>
+
+                {/* Memory Selector */}
+                <Field data-invalid={!!errors.memory}>
+                  <FieldLabel htmlFor="memory">Memory Allocation</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="memory"
+                    render={({ field }) => (
+                      <Select
+                        disabled={createDeploymentMutation.isPending}
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger id="memory" className="w-full">
+                          <SelectValue placeholder="Select Memory" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getMemoryOptions(metricsStore.metrics).map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.memory && (
+                    <FieldError>{errors.memory.message}</FieldError>
+                  )}
+                </Field>
               </Field>
             </FieldGroup>
           </FieldSet>

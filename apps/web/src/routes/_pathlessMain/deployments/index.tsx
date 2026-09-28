@@ -113,7 +113,7 @@ function RouteComponent() {
       return (res?.data.data ?? []) as Project[]
     },
     refetchInterval: 4000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
   })
 
   const {
@@ -129,7 +129,7 @@ function RouteComponent() {
       return (res?.data.data ?? []) as Deployment[]
     },
     refetchInterval: 4000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
   })
 
   const columns = useMemo<ColumnDef<Deployment>[]>(
