@@ -60,6 +60,8 @@ export class ProjectController {
       nonSecretEnvs,
       deploymentName,
       secretEnvs,
+      cpu,
+      memory,
     } = parsedPayload
 
     await this.projectService.createDeployment({
@@ -80,6 +82,8 @@ export class ProjectController {
       servicePort: portBinding,
       path: path,
       visibility,
+      cpu: Number(cpu ?? 1),
+      memory: memory ?? "1GB",
     })
 
     return res.status(200).json(new ApiResponse(200, "Deployment Created"))
@@ -105,6 +109,8 @@ export class ProjectController {
       deploymentName,
       secretEnvs,
       projectName,
+      cpu,
+      memory,
     } = parsedPayload
 
     await this.projectService.updateDeployment({
@@ -125,6 +131,8 @@ export class ProjectController {
       visibility,
       servicePort: portBinding,
       path: path,
+      cpu: Number(cpu ?? 1),
+      memory: memory ?? "1GB",
     })
     return res.status(200).json(new ApiResponse(200, "Deployment Updated"))
   }
@@ -186,6 +194,8 @@ export class ProjectController {
       project_name,
       deployment_name
     )
+
+    // console.log(response)
     return res.status(200).json(new ApiResponse(200, "Ok", response))
   }
 

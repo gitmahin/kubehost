@@ -58,6 +58,8 @@ export class ProjectZSchema extends ZodBase {
     visibility: z.enum(["public", "private"]),
     host: z.string().trim().optional(),
     path: z.string().trim().optional(),
+    cpu: z.coerce.number().optional(),
+    memory: z.string().optional(),
   })
 
   static hostRequiredForPublic(

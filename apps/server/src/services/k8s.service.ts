@@ -4,6 +4,9 @@ import { getSystemCustomErrorMsgByKey } from "@/events"
 import { ApiError } from "@/libs"
 import * as k8s from "@kubernetes/client-node"
 import { injectable } from "inversify"
+import { parseCpuToNano } from "@/utils/parseCpuToNano"
+import { parseMemoryToBytes } from "@/utils/parseMemoryToBytes"
+import type { ContainerMetrics, DeploymentMetrics, PodMetrics } from "@repo/types"
 
 export type EnvMapDataType = {
   [key: string]: {
@@ -83,22 +86,6 @@ export class K8sService {
     this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api)
     this.networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api)
     this.customObjectsApi = this.kc.makeApiClient(k8s.CustomObjectsApi)
-  }
-
-  static parseCpuToNano(cpu: string): number {
-    if (cpu.endsWith("n")) {
-      return Number(cpu.slice(0, -1))
-    }
-
-    if (cpu.endsWith("u")) {
-      return Number(cpu.slice(0, -1)) * 1_000
-    }
-
-    if (cpu.endsWith("m")) {
-      return Number(cpu.slice(0, -1)) * 1_000_000
-    }
-
-    return Number(cpu) * 1_000_000_000
   }
 
   async listAllPods(namespace: string) {
@@ -499,146 +486,224 @@ export class K8sService {
     }
   }
 
-  async getDeploymentMetrics(
-    namespace: string,
-    deploymentName: string,
-    cpuThreshold = 70
-  ) {
-    try {
-      console.log(
-        `Fetching metrics for deployment: ${deploymentName} in namespace: ${namespace}...\n`
-      )
+async getDeploymentMetrics(
+  namespace: string,
+  deploymentName: string
+): Promise<DeploymentMetrics> {
+  console.log(
+    `Fetching metrics for deployment: ${deploymentName} in namespace: ${namespace}...\n`
+  )
 
-      // Get Deployment
-      const deployRes = await this.appsApi.readNamespacedDeployment({
-        name: deploymentName,
-        namespace,
-      })
+  // Get Deployment
+  const deployRes = await this.appsApi.readNamespacedDeployment({
+    name: deploymentName,
+    namespace,
+  })
 
-      const deploymentContainers =
-        deployRes.spec?.template?.spec?.containers ?? []
+  const deploymentContainers = deployRes.spec?.template?.spec?.containers ?? []
 
-      if (deploymentContainers.length === 0) {
-        throw new Error(`No containers found in deployment "${deploymentName}"`)
-      }
+  if (deploymentContainers.length === 0) {
+    throw new Error(`No containers found in deployment "${deploymentName}"`)
+  }
 
-      // Build Deployment label selector
-      const matchLabels = deployRes.spec?.selector?.matchLabels ?? {}
+  // Build Deployment label selector
+  const matchLabels = deployRes.spec?.selector?.matchLabels ?? {}
 
-      const labelSelector = Object.entries(matchLabels)
-        .map(([key, value]) => `${key}=${value}`)
-        .join(",")
+  const labelSelector = Object.entries(matchLabels)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(",")
 
-      // Get Pod metrics
-      const metricsRes = await this.customObjectsApi.listNamespacedCustomObject(
-        {
-          group: "metrics.k8s.io",
-          version: "v1beta1",
-          namespace,
-          plural: "pods",
-          labelSelector,
-        }
-      )
+  // Get Pod metrics
+  const metricsRes = (await this.customObjectsApi.listNamespacedCustomObject({
+    group: "metrics.k8s.io",
+    version: "v1beta1",
+    namespace,
+    plural: "pods",
+    labelSelector,
+  })) as { items?: any[] }
 
-      const podMetricsList = (metricsRes.body as any)?.items ?? []
+  // v1.x of @kubernetes/client-node returns the object directly (no .body)
+  const podMetricsList = metricsRes?.items ?? []
 
-      if (podMetricsList.length === 0) {
-        console.log(
-          "No active resource metrics found. Ensure metrics-server is running."
-        )
+  if (podMetricsList.length === 0) {
+    console.log(
+      `No pod metrics found for selector "${labelSelector}" in namespace "${namespace}". ` +
+        "Pods may still be starting, or metrics-server may not be running."
+    )
 
-        return {
-          hasHighCpu: false,
-          shouldScale: false,
-          pods: [],
-        }
-      }
-
-      // Calculate CPU utilization
-      let totalCpuNano = 0
-
-      const pods = podMetricsList.map((pod: any) => {
-        const containers = pod.containers ?? []
-
-        const containerMetrics = containers.map((containerMetric: any) => {
-          const cpuUsage = containerMetric.usage?.cpu
-
-          if (!cpuUsage) {
-            return {
-              name: containerMetric.name,
-              cpuUsage: null,
-              cpuLimit: null,
-              utilization: null,
-              highCpu: false,
-            }
-          }
-
-          /**
-           * Find the same container in Deployment spec.
-           */
-          const containerSpec = deploymentContainers.find(
-            (container) => container.name === containerMetric.name
-          )
-
-          const cpuLimit = containerSpec?.resources?.limits?.cpu
-
-          /**
-           * If there is no CPU limit, we cannot calculate
-           * utilization against the limit.
-           */
-          if (!cpuLimit) {
-            return {
-              name: containerMetric.name,
-              cpuUsage,
-              cpuLimit: null,
-              utilization: null,
-              highCpu: false,
-            }
-          }
-
-          const usageNano = K8sService.parseCpuToNano(cpuUsage)
-          const limitNano = K8sService.parseCpuToNano(cpuLimit)
-
-          totalCpuNano += usageNano
-
-          const utilization = (usageNano / limitNano) * 100
-
-          const highCpu = utilization > cpuThreshold
-
-          if (highCpu) {
-            console.log(
-              `HIGH CPU: ${pod.metadata?.name} / ${containerMetric.name} -> ${utilization.toFixed(2)}%`
-            )
-          }
-
-          return {
-            name: containerMetric.name,
-            cpuUsage,
-            cpuLimit,
-            utilization,
-            highCpu,
-          }
-        })
-
-        return {
-          name: pod.metadata?.name,
-          containers: containerMetrics,
-        }
-      })
-
-      // Check whether ANY container is above threshold
-      const hasHighCpu = pods.some((pod: any) =>
-        pod.containers.some((container: any) => container.highCpu)
-      )
-
-      return {
-        hasHighCpu,
-        shouldScale: hasHighCpu,
-        pods,
-        totalCpuMillicores: totalCpuNano / 1_000_000,
-      }
-    } catch (error: any) {
-      throw error
+    return {
+      pods: [],
+      totalCpuMillicores: 0,
+      totalMemoryBytes: 0,
+      totalMemoryMiB: 0,
     }
   }
+
+  let totalCpuNano = 0
+  let totalMemoryBytes = 0
+
+  const pods: PodMetrics[] = podMetricsList.map((pod: any) => {
+    const containers: any[] = pod.containers ?? []
+
+    const containerMetrics: ContainerMetrics[] = containers.map(
+      (containerMetric: any) => {
+        const cpuUsage: string | undefined = containerMetric.usage?.cpu
+        const memoryUsage: string | undefined = containerMetric.usage?.memory
+
+        // Find the same container in Deployment spec
+        const containerSpec = deploymentContainers.find(
+          (container) => container.name === containerMetric.name
+        )
+
+        const cpuLimit = containerSpec?.resources?.limits?.cpu
+        const memoryLimit = containerSpec?.resources?.limits?.memory
+
+        // CPU
+        let cpuUtilization: number | null = null
+
+        if (cpuUsage) {
+          const usageNano = parseCpuToNano(cpuUsage)
+          totalCpuNano += usageNano
+
+          if (cpuLimit) {
+            const limitNano = parseCpuToNano(cpuLimit)
+            cpuUtilization = limitNano > 0 ? (usageNano / limitNano) * 100 : null
+          }
+        }
+
+        // Memory
+        let memoryUtilization: number | null = null
+
+        if (memoryUsage) {
+          const usageBytes = parseMemoryToBytes(memoryUsage)
+          totalMemoryBytes += usageBytes
+
+          if (memoryLimit) {
+            const limitBytes = parseMemoryToBytes(memoryLimit)
+            memoryUtilization =
+              limitBytes > 0 ? (usageBytes / limitBytes) * 100 : null
+          }
+        }
+
+        return {
+          name: containerMetric.name,
+
+          cpu: {
+            usage: cpuUsage ?? null,
+            limit: cpuLimit ?? null,
+            utilization: cpuUtilization,
+          },
+
+          memory: {
+            usage: memoryUsage ?? null,
+            limit: memoryLimit ?? null,
+            utilization: memoryUtilization,
+          },
+        }
+      }
+    )
+
+    return {
+      name: pod.metadata?.name,
+      containers: containerMetrics,
+    }
+  })
+
+  return {
+    pods,
+    totalCpuMillicores: totalCpuNano / 1_000_000,
+    totalMemoryBytes,
+    totalMemoryMiB: totalMemoryBytes / (1024 * 1024),
+  }
+}
+
+  // async getAllContainerUsage() {
+  //   // Get actual Pod usage from Metrics Server
+  //   const metricsRes =
+  //     await this.customObjectsApi.listClusterCustomObject({
+  //       group: "metrics.k8s.io",
+  //       version: "v1beta1",
+  //       plural: "pods",
+  //     })
+
+  //   const podMetricsList =
+  //     (metricsRes as any)?.items ??
+  //     (metricsRes as any)?.body?.items ??
+  //     []
+
+  //   let totalCpuNano = 0
+  //   let totalMemoryBytes = 0
+
+  //   const containers = []
+
+  //   for (const pod of podMetricsList) {
+  //     const namespace = pod.metadata?.namespace
+  //     const podName = pod.metadata?.name
+
+  //     for (const container of pod.containers ?? []) {
+  //       const cpuUsage = container.usage?.cpu
+  //       const memoryUsage = container.usage?.memory
+
+  //       if (!cpuUsage || !memoryUsage) {
+  //         continue
+  //       }
+
+  //       const cpuNano = parseCpuToNano(cpuUsage)
+  //       const memoryBytes = parseMemoryToBytes(memoryUsage)
+
+  //       totalCpuNano += cpuNano
+  //       totalMemoryBytes += memoryBytes
+
+  //       containers.push({
+  //         namespace,
+  //         pod: podName,
+  //         container: container.name,
+
+  //         cpu: {
+  //           usage: cpuUsage,
+  //           nanocores: cpuNano,
+  //           millicores: cpuNano / 1_000_000,
+  //           cores: cpuNano / 1_000_000_000,
+  //         },
+
+  //         memory: {
+  //           usage: memoryUsage,
+  //           bytes: memoryBytes,
+  //           MiB: memoryBytes / (1024 * 1024),
+  //           GiB: memoryBytes / (1024 * 1024 * 1024),
+  //         },
+  //       })
+  //     }
+  //   }
+
+  //   const totalCpuCores =
+  //     totalCpuNano / 1_000_000_000
+
+  //   const totalCpuMillicores =
+  //     totalCpuNano / 1_000_000
+
+  //   const totalMemoryMiB =
+  //     totalMemoryBytes / (1024 * 1024)
+
+  //   const totalMemoryGiB =
+  //     totalMemoryBytes / (1024 * 1024 * 1024)
+
+  //   return {
+  //     containers,
+
+  //     total: {
+  //       cpu: {
+  //         nanocores: totalCpuNano,
+  //         millicores: totalCpuMillicores,
+  //         cores: totalCpuCores,
+  //       },
+
+  //       memory: {
+  //         bytes: totalMemoryBytes,
+  //         MiB: totalMemoryMiB,
+  //         GiB: totalMemoryGiB,
+  //       },
+  //     },
+  //   }
+  // }
 }

@@ -60,6 +60,8 @@ import {
 import { cn } from "@workspace/ui/lib/utils"
 import { ProjectService } from "@repo/services"
 import { getClientEnv } from "@/utils/env"
+import type { DeploymentMetrics, ResourceMetric } from "@repo/types"
+import { PodResourceMetrics } from "./PodResourceMetrics"
 
 export const Route = createFileRoute(
   "/_pathlessMain/projects/$project_id/depl/$depl_id/"
@@ -126,6 +128,62 @@ function getStatusStyle(status?: string) {
   )
 }
 
+function formatCpu(value?: string | null) {
+  if (!value) return "-"
+  const num = parseFloat(value)
+  let millicores: number
+  if (value.endsWith("n")) millicores = num / 1_000_000
+  else if (value.endsWith("u")) millicores = num / 1_000
+  else if (value.endsWith("m")) millicores = num
+  else millicores = num * 1000
+  return `${millicores.toFixed(millicores < 10 ? 1 : 0)}m`
+}
+
+function formatMemory(value?: string | null) {
+  if (!value) return "-"
+  const num = parseFloat(value)
+  const units: Record<string, number> = {
+    Ki: 1024,
+    Mi: 1024 ** 2,
+    Gi: 1024 ** 3,
+    Ti: 1024 ** 4,
+    K: 1000,
+    M: 1000 ** 2,
+    G: 1000 ** 3,
+    T: 1000 ** 4,
+  }
+  const unit = Object.keys(units).find((u) => value.endsWith(u))
+  const bytes = unit ? num * units[unit]! : num
+  const mib = bytes / (1024 * 1024)
+  return mib >= 1024 ? `${(mib / 1024).toFixed(2)} GiB` : `${mib.toFixed(1)} MiB`
+}
+
+function getUtilizationColor(pct: number) {
+  if (pct >= 90) return "bg-red-500"
+  if (pct >= 70) return "bg-yellow-500"
+  return "bg-green-500"
+}
+
+function MetricBar({ metric }: { metric: ResourceMetric }) {
+  if (metric.utilization === null) {
+    return <span className="text-xs text-zinc-500">No limit set</span>
+  }
+  const pct = Math.min(100, Math.max(0, metric.utilization))
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-2 w-28 overflow-hidden rounded-full bg-zinc-800">
+        <div
+          className={cn("h-full rounded-full transition-all", getUtilizationColor(pct))}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="w-12 text-right font-mono text-xs text-zinc-300">
+        {metric.utilization.toFixed(1)}%
+      </span>
+    </div>
+  )
+}
+
 const replicaChartConfig = {
   ready: {
     label: "Ready",
@@ -161,12 +219,14 @@ function RouteComponent() {
         project_name: project_id,
         deployment_name: depl_id,
       })
-      return (res?.data?.data ?? res?.data) as DashboardData
+      return (res?.data?.data ?? res?.data) as DashboardData & { metrics: DeploymentMetrics }
     },
     enabled: !!project_id && !!depl_id,
-    refetchInterval: 4000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 2000,
+    refetchIntervalInBackground: false,
   })
+
+  const metrics = data?.metrics
 
   // Delete Deployment Mutation using Sonner toasts
   const deleteMutation = useMutation({
@@ -548,6 +608,9 @@ function RouteComponent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pod Resource Metrics */}
+      <PodResourceMetrics isLoading={isLoading} metrics={metrics!} />
 
       {/* Pod Instances Table */}
       <Card className="border-zinc-800 bg-zinc-900/40">

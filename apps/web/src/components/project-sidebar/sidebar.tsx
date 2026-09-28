@@ -36,7 +36,7 @@ export const ProjectSidebar = ({
     },
     enabled: !!project_id,
     refetchInterval: 4000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
   })
 
   // console.log(deployments)

@@ -40,3 +40,28 @@ export type DeploymentDashboard = {
     createdAt?: Date
   }>
 }
+
+
+export interface ResourceMetric {
+  usage: string | null
+  limit: string | null
+  utilization: number | null
+}
+
+export interface ContainerMetrics {
+  name: string
+  cpu: ResourceMetric
+  memory: ResourceMetric
+}
+
+export interface PodMetrics {
+  name: string | undefined
+  containers: ContainerMetrics[]
+}
+
+export interface DeploymentMetrics {
+  pods: PodMetrics[]
+  totalCpuMillicores: number
+  totalMemoryBytes: number
+  totalMemoryMiB: number
+}

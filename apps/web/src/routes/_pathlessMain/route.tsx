@@ -27,8 +27,8 @@ function RouteComponent() {
       const res: any = await kubehostService.getMetricsDashboard()
       return res?.data?.data ?? res?.data ?? res
     },
-    refetchInterval: 4000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 2000,
+    refetchIntervalInBackground: false,
   })
 
   useEffect(() => {
