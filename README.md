@@ -143,7 +143,7 @@ pnpm dev
    | TCP  | 3001 | 0.0.0.0/0 |
    | TCP  | 80   | 0.0.0.0/0 |
 
-9. Open in browser: http://<your_domain>:3001
+9. Give it a moment to provision kubehost apiserver and then open in browser: http://<your_domain>:3001
 10. Create new project
 11. Create new application deployment. 
 
