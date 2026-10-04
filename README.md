@@ -50,6 +50,7 @@ Install these on your VPS (or local machine) before using KubeHost:
 
 - **Docker** - https://docs.docker.com/engine/install/
 - **Minikube** - https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download
+- **Required** - 4GB Ram, 2 CPUS and 20GB storage
 
 ## Install (on a VPS)
 
